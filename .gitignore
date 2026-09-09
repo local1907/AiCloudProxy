@@ -1,0 +1,61 @@
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nupkg
+*.snupkg
+*.nuspec
+*.cache
+*.pdb
+*.user
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Rr]esult*/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Visual Studio generated files
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# Rider
+.idea/
+
+# Local AI assistant session logs (not source)
+ChatLog*.md
+
+# Secrets / certificates / keys (safety — never commit)
+*.pfx
+*.p12
+*.snk
+*.key
+*.env
+.env
+.env.*

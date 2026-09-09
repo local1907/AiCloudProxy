@@ -1,0 +1,559 @@
+<Window x:Class="AiCloudProxy.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:infra="clr-namespace:AiCloudProxy.Infrastructure"
+        mc:Ignorable="d"
+        Title="AI Cloud Proxy"
+        Icon="pack://application:,,,/Assets/icon.ico"
+        Height="740" Width="980"
+        MinHeight="620" MinWidth="840"
+        WindowStartupLocation="CenterScreen"
+        Background="#F3F4F6"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <infra:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+
+        <SolidColorBrush x:Key="AccentBrush" Color="#2563EB"/>
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#1D4ED8"/>
+        <SolidColorBrush x:Key="SuccessBrush" Color="#16A34A"/>
+        <SolidColorBrush x:Key="DangerBrush" Color="#DC2626"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#6B7280"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#E5E7EB"/>
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+
+        <Style x:Key="InputBox" TargetType="TextBox">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="PasswordInput" TargetType="PasswordBox">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="36"/>
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="GhostButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="CoffeeButton" TargetType="Button">
+            <Setter Property="Background" Value="#FF813F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#E8710A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MailButton" TargetType="Button">
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#1D4ED8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="LinkButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Width="42" Height="42" CornerRadius="21" Background="{StaticResource AccentBrush}" Margin="0,0,12,0">
+                    <TextBlock Text="AI" Foreground="White" FontSize="20" FontWeight="Bold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel>
+                    <TextBlock Text="AI Cloud Proxy" FontSize="20" FontWeight="SemiBold" Foreground="#111827"/>
+                    <TextBlock Text="Ollama-compatible local endpoint that forwards to your AI provider"
+                               FontSize="12" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="Quick Tour" Click="OnQuickTourClick"
+                        Style="{StaticResource GhostButton}" Margin="0,0,10,0"
+                        ToolTip="Show the first-time quick tour again"/>
+                <Border CornerRadius="20" Padding="14,6">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="#FEE2E2"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                <Setter Property="Background" Value="#DCFCE7"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{StaticResource DangerBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                        <Setter Property="Fill" Value="{StaticResource SuccessBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="SemiBold" Foreground="#111827"/>
+                </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- Content -->
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+            <TabItem Header="Proxy Server" Padding="12,10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,6,0,0">
+
+                        <!-- Server -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Server" Style="{StaticResource SectionTitle}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Port" Style="{StaticResource Label}"/>
+                                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="150" HorizontalAlignment="Left"
+                                                 Style="{StaticResource InputBox}"
+                                                 ToolTip="Local port for the Ollama-compatible endpoint. Point your tool to http://127.0.0.1:&lt;port&gt;"/>
+                                        <TextBlock Text="Ollama's default port is 11434; this app defaults to 11435."
+                                                   FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Margin="24,0,0,0">
+                                        <Button Content="{Binding StartStopLabel}" Command="{Binding StartStopCommand}"
+                                                Style="{StaticResource PrimaryButton}" MinWidth="170"/>
+                                        <TextBlock Text="{Binding StartStopHint}" FontSize="11"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" TextAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Provider -->
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Provider" Style="{StaticResource SectionTitle}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="3*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="AI Provider" Style="{StaticResource Label}"/>
+                                            <Button Grid.Column="1" Content="Get API Key ↗"
+                                                    Command="{Binding OpenKeyPageCommand}"
+                                                    IsEnabled="{Binding CanOpenKeyPage}"
+                                                    Style="{StaticResource LinkButton}"
+                                                    Margin="0,0,0,4"
+                                                    ToolTip="{Binding KeyPageUrl}"/>
+                                        </Grid>
+                                        <ComboBox ItemsSource="{Binding Providers}"
+                                                  SelectedItem="{Binding SelectedProvider}"
+                                                  DisplayMemberPath="DisplayName"/>
+                                        <TextBlock Text="Choose a provider, or add your own OpenAI-compatible endpoint below"
+                                                   FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+
+                                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1"
+                                                CornerRadius="6" Padding="10" Margin="0,12,0,0">
+                                            <StackPanel>
+                                                <TextBlock Text="Custom AI provider" Style="{StaticResource Label}" FontWeight="SemiBold"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBox Text="{Binding NewProviderName, UpdateSourceTrigger=PropertyChanged}"
+                                                             Style="{StaticResource InputBox}"
+                                                             ToolTip="Give your custom provider a name, e.g. OpenRouter or My vLLM."/>
+                                                    <Button Grid.Column="1" Content="Add" Command="{Binding AddCustomProviderCommand}"
+                                                            Style="{StaticResource GhostButton}" MinWidth="56" Margin="8,0,0,0"/>
+                                                </Grid>
+                                                <TextBlock Text="Adds your own OpenAI-compatible endpoint. Then select it, enter its Base URL, API key and default model."
+                                                           FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+                                                <TextBlock Text="Tip: put the full API path in the Base URL, e.g. https://openrouter.ai/api/v1 — the app appends /chat/completions and /models to it."
+                                                           FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                                <Button Content="Remove Custom Provider" Command="{Binding RemoveCustomProviderCommand}"
+                                                        Style="{StaticResource GhostButton}" HorizontalAlignment="Left"
+                                                        Margin="0,8,0,0" IsEnabled="{Binding IsCustomProvider}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <Grid Grid.Column="1">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel>
+                                            <TextBlock Text="API Key" Style="{StaticResource Label}"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <PasswordBox x:Name="ApiKeyBox"
+                                                             infra:PasswordBoxHelper.BoundPassword="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Style="{StaticResource PasswordInput}"
+                                                             Visibility="{Binding ShowApiKey, Converter={StaticResource InverseBoolToVis}}"/>
+                                                <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                         Style="{StaticResource InputBox}"
+                                                         Visibility="{Binding ShowApiKey, Converter={StaticResource BoolToVis}}"/>
+                                                <CheckBox Grid.Column="1" Content="Show" VerticalAlignment="Center"
+                                                          Margin="10,0,0,0" IsChecked="{Binding ShowApiKey}"/>
+                                            </Grid>
+                                        </StackPanel>
+
+                                        <!-- Buy Me a Coffee -->
+                                        <Border Grid.Row="1" Background="#FFF7ED" BorderBrush="#FED7AA"
+                                                BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,14,0,0">
+                                            <StackPanel>
+                                                <TextBlock Text="☕ Support the project" FontWeight="SemiBold"
+                                                           FontSize="13" Foreground="#9A3412" Margin="0,0,0,10"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Image Source="pack://application:,,,/Assets/qr-code.png"
+                                                           Width="100" Height="100" Stretch="Uniform"
+                                                           Margin="0,0,14,0"
+                                                           ToolTip="Scan this QR code to support the project on Buy Me a Coffee"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="Enjoying AI Cloud Proxy? Buy me a coffee to keep it going ☕"
+                                                                   FontSize="12" Foreground="#7C2D12" Margin="0,0,0,10"/>
+                                                        <Button Content="Buy Me a Coffee ↗"
+                                                                Command="{Binding OpenDonationPageCommand}"
+                                                                Style="{StaticResource CoffeeButton}"
+                                                                HorizontalAlignment="Left"/>
+                                                        <TextBlock Text="{Binding DonationUrl}" FontSize="11"
+                                                                   Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0"/>
+                                                        <TextBlock Text="If this project helped you, buy me a coffee ☕"
+                                                                   FontSize="11" FontStyle="Italic"
+                                                                   Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+
+                                <Grid Margin="0,14,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="3*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                        <TextBlock Text="Default model" Style="{StaticResource Label}"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox IsEditable="True"
+                                                      ItemsSource="{Binding AvailableModels}"
+                                                      Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}"
+                                                      ToolTip="Default/fallback model. Tools can also use any other model discovered from your provider."/>
+                                            <Button Grid.Column="1" Content="{Binding FetchModelsLabel}"
+                                                    Command="{Binding FetchModelsCommand}"
+                                                    Style="{StaticResource GhostButton}"
+                                                    MinWidth="86" Margin="8,0,0,0"
+                                                    ToolTip="Connect to the provider and load the available models using the API key above."/>
+                                        </Grid>
+                                        <TextBlock Text="All discovered models are advertised to tools; this one is the fallback for unknown names. Click 'Get Models' to refresh."
+                                                   FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Base URL (optional)" Style="{StaticResource Label}"/>
+                                        <TextBox Text="{Binding BaseUrl, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource InputBox}"
+                                                 ToolTip="Override the provider endpoint. Useful for custom OpenAI-compatible APIs."/>
+                                        <TextBlock Text="Override only for custom OpenAI-compatible endpoints"
+                                                   FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Options -->
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel>
+                                    <TextBlock Text="Options" Style="{StaticResource SectionTitle}"/>
+                                    <CheckBox Content="Auto-start proxy when the app launches" IsChecked="{Binding AutoStartProxy}"/>
+                                    <CheckBox Content="Minimize to system tray when closing the window"
+                                              IsChecked="{Binding MinimizeToTray}" Margin="0,8,0,0"/>
+                                </StackPanel>
+
+                                <!-- Feedback -->
+                                <Border Grid.Column="1" Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
+                                        CornerRadius="6" Padding="14" Margin="24,0,0,0"
+                                        VerticalAlignment="Center" MaxWidth="380">
+                                    <StackPanel>
+                                        <TextBlock Text="💬 Feedback" FontWeight="SemiBold"
+                                                   FontSize="13" Foreground="#1E40AF" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Found a bug or have an idea? Send me a quick email — nothing is stored by this app and no personal info is needed."
+                                                   FontSize="12" Foreground="#1E3A8A" Margin="0,0,0,10"/>
+                                        <Button Content="Send Feedback ✉️"
+                                                Command="{Binding SendFeedbackCommand}"
+                                                Style="{StaticResource MailButton}"
+                                                HorizontalAlignment="Left"/>
+                                        <TextBlock Text="{Binding FeedbackEmail}" FontSize="11"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Log -->
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Log" Style="{StaticResource SectionTitle}"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Button Content="Copy" Command="{Binding CopyLogCommand}"
+                                                Style="{StaticResource GhostButton}" Margin="0,0,8,0"
+                                                ToolTip="Copy all log lines to the clipboard"/>
+                                        <Button Content="Clear" Command="{Binding ClearLogCommand}"
+                                                Style="{StaticResource GhostButton}"/>
+                                    </StackPanel>
+                                </Grid>
+                                <ListView x:Name="LogList" Grid.Row="1" ItemsSource="{Binding LogEntries}"
+                                          Height="230" Background="#0F172A" Foreground="#E2E8F0"
+                                          BorderBrush="#1E293B" BorderThickness="1" FontFamily="Consolas"
+                                          FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                          VirtualizingStackPanel.IsVirtualizing="False">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="Padding" Value="4,2"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding TimeDisplay}" Foreground="#94A3B8"/>
+                                                <TextBlock Text="  "/>
+                                                <TextBlock Text="{Binding Level}" Foreground="{Binding LevelBrush}"/>
+                                                <TextBlock Text="  "/>
+                                                <TextBlock Text="{Binding Message}" Foreground="#E2E8F0"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Test" Padding="12,10">
+                <Grid Margin="0,6,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Try the configured provider directly. The question uses the provider, model and API key from the Proxy Server tab — the proxy does not need to be running."
+                               Style="{StaticResource Label}" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,10"/>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Your question" Style="{StaticResource Label}"/>
+                            <TextBox Grid.Row="1" Text="{Binding TestInput, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource InputBox}" AcceptsReturn="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" Height="120" VerticalContentAlignment="Top"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Response" Style="{StaticResource SectionTitle}"/>
+                                <Button Grid.Column="1" Content="{Binding TestButtonLabel}" Command="{Binding TestCommand}"
+                                        Style="{StaticResource PrimaryButton}" MinWidth="130"/>
+                            </Grid>
+                            <TextBox Grid.Row="1" Text="{Binding TestOutput, Mode=OneWay}"
+                                     Style="{StaticResource InputBox}" IsReadOnly="True" AcceptsReturn="True"
+                                     TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     Height="280" VerticalContentAlignment="Top" Background="#F9FAFB"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

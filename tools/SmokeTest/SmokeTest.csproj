@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- Compile the real proxy code directly into this test harness. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\AiCloudProxy\Services\**\*.cs" LinkBase="Linked\Services" />
+    <Compile Include="..\..\src\AiCloudProxy\Models\**\*.cs" LinkBase="Linked\Models" />
+    <Compile Include="..\..\src\AiCloudProxy\ViewModels\LogEntry.cs" Link="Linked\ViewModels\LogEntry.cs" />
+  </ItemGroup>
+
+</Project>

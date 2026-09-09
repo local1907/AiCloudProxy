@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AiCloudProxy</RootNamespace>
+    <AssemblyName>AICloudProxy</AssemblyName>
+    <Version>1.0.0</Version>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!--
+    Images and icons live in the Assets folder and are embedded automatically
+    (the line below). Reference them from XAML like:
+      Source="pack://application:,,,/Assets/qr-code.png"
+
+    To use a custom app/taskbar icon, drop an "icon.ico" into Assets and add to the
+    first <PropertyGroup> above:
+      <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+  -->
+  <ItemGroup>
+    <Resource Include="Assets\**\*" />
+  </ItemGroup>
+
+</Project>

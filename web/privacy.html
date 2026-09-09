@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Primary SEO -->
+  <title>Privacy Policy — AI Cloud Proxy</title>
+  <meta name="description" content="AI Cloud Proxy is private by design: no accounts, no telemetry, no cookies. This policy explains exactly what the website and the Windows app do — and don't do — with your data.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aicloudproxy.com/privacy.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="AI Cloud Proxy">
+  <meta property="og:title" content="Privacy Policy — AI Cloud Proxy">
+  <meta property="og:description" content="No accounts, no telemetry, no cookies. Read exactly what the AI Cloud Proxy website and app do — and don't do — with your data.">
+  <meta property="og:url" content="https://aicloudproxy.com/privacy.html">
+  <meta property="og:image" content="https://aicloudproxy.com/assets/og-image.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Privacy Policy — AI Cloud Proxy">
+  <meta name="twitter:description" content="AI Cloud Proxy is private by design: no accounts, no telemetry, no cookies.">
+  <meta name="twitter:image" content="https://aicloudproxy.com/assets/og-image.png">
+
+  <meta name="theme-color" content="#0b1220">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="assets/styles.css">
+
+  <!-- Page-scoped styles for the legal/document layout (kept out of styles.css) -->
+  <style>
+    .page-hero { padding: 72px 0 8px; }
+    .page-hero .container.narrow { display: flex; flex-direction: column; gap: 6px; }
+    .back-link { color: var(--text-muted); font-size: 0.9rem; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; width: fit-content; }
+    .back-link:hover { color: #fff; }
+    .doc-updated { color: var(--text-dim); font-size: 0.88rem; margin: 0; }
+    .tldr {
+      margin: 28px 0 0; border: 1px solid rgba(34,197,94,0.35);
+      background: linear-gradient(180deg, rgba(34,197,94,0.10), rgba(34,197,94,0.03));
+      border-radius: var(--radius); padding: 22px 26px;
+    }
+    .tldr h2 { margin: 0 0 10px; font-size: 1.1rem; }
+    .tldr ul { margin: 0; padding-left: 20px; color: var(--text-muted); }
+    .tldr li { margin: 6px 0; }
+
+    .legal-doc { padding: 48px 0 84px; }
+    .legal-doc .container.narrow { max-width: 760px; }
+    .legal-section { margin: 44px 0 0; }
+    .legal-section > h2 {
+      font-size: clamp(1.25rem, 2.4vw, 1.55rem); letter-spacing: -0.01em;
+      margin: 0 0 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+    }
+    .legal-section h3 { font-size: 1.05rem; margin: 26px 0 6px; color: var(--text); }
+    .legal-doc p, .legal-doc li { color: var(--text-muted); font-size: 0.98rem; }
+    .legal-doc p { margin: 14px 0; }
+    .legal-doc ul, .legal-doc ol { padding-left: 22px; }
+    .legal-doc li { margin: 8px 0; }
+    .legal-doc li::marker { color: var(--text-dim); }
+    .legal-doc strong { color: var(--text); }
+    .legal-doc .note-sm { font-size: 0.85rem; color: var(--text-dim); }
+    .mini-toc { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 24px; margin: 40px 0 0; }
+    .mini-toc h2 { font-size: 1rem; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); }
+    .mini-toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 40px; }
+    .mini-toc li { margin: 5px 0; font-size: 0.94rem; }
+    .mini-toc a { color: var(--blue-soft); text-decoration: none; }
+    .mini-toc a:hover { text-decoration: underline; }
+    @media (max-width: 640px) { .mini-toc ol { columns: 1; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ======================= NAV ======================= -->
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html" aria-label="AI Cloud Proxy home">
+        <img class="brand-mark" src="assets/logo.svg" alt="" width="34" height="34">
+        <span class="brand-name">AI&nbsp;Cloud&nbsp;Proxy</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary">
+        <a href="index.html#features">Features</a>
+        <a href="index.html#how-it-works">How it works</a>
+        <a href="index.html#endpoints">Endpoints</a>
+        <a href="index.html#quick-start">Quick start</a>
+        <a href="index.html#screenshots">Screenshots</a>
+        <a href="index.html#faq">FAQ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="btn btn-primary" href="index.html#download">Download</a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobileMenu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <nav id="mobileMenu" class="mobile-menu" aria-label="Mobile">
+      <a href="index.html#features">Features</a>
+      <a href="index.html#how-it-works">How it works</a>
+      <a href="index.html#endpoints">Endpoints</a>
+      <a href="index.html#quick-start">Quick start</a>
+      <a href="index.html#screenshots">Screenshots</a>
+      <a href="index.html#faq">FAQ</a>
+      <a class="btn btn-primary" href="index.html#download">Download</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- ======================= PAGE HERO ======================= -->
+    <section class="page-hero">
+      <div class="container narrow">
+        <a class="back-link" href="index.html">← Back to AI Cloud Proxy</a>
+        <p class="eyebrow">Legal</p>
+        <h1>Privacy Policy</h1>
+        <p class="doc-updated">Last updated: September 3, 2026</p>
+      </div>
+    </section>
+
+    <!-- ======================= TL;DR ======================= -->
+    <section class="legal-doc" style="padding-top: 0;">
+      <div class="container narrow">
+        <div class="tldr reveal">
+          <h2>⚡ The short version</h2>
+          <ul>
+            <li><strong>No accounts.</strong> AI Cloud Proxy never asks you to sign up or register.</li>
+            <li><strong>No telemetry.</strong> The app does not phone home. Nothing is sent to us automatically — ever.</li>
+            <li><strong>No cookies.</strong> This website sets no cookies and runs no third-party trackers or analytics.</li>
+            <li><strong>Local by design.</strong> Your keys and settings stay in a file on your own PC.</li>
+            <li><strong>Your chats go only to the provider you choose</strong> (DeepSeek, OpenAI, Gemini, Claude, or a custom endpoint) — they never pass through our servers, because there are none.</li>
+            <li><strong>Logs stay on your device.</strong> They reach us only if you copy them into an email yourself.</li>
+          </ul>
+        </div>
+
+        <div class="mini-toc reveal">
+          <h2>Contents</h2>
+          <ol>
+            <li><a href="#who">Who we are</a></li>
+            <li><a href="#scope">What this policy covers</a></li>
+            <li><a href="#website">The website (aicloudproxy.com)</a></li>
+            <li><a href="#app">The desktop app</a></li>
+            <li><a href="#providers">Chats &amp; third-party providers</a></li>
+            <li><a href="#feedback">Feedback &amp; support</a></li>
+            <li><a href="#retention">Data retention &amp; deletion</a></li>
+            <li><a href="#children">Children&rsquo;s privacy</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#rights">Your rights &amp; choices</a></li>
+            <li><a href="#changes">Changes to this policy</a></li>
+            <li><a href="#contact">Contact us</a></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= DOCUMENT ======================= -->
+    <section class="legal-doc">
+      <div class="container narrow">
+
+        <div class="legal-section reveal" id="who">
+          <h2>1. Who we are</h2>
+          <p>AI Cloud Proxy is a free, open-source Windows desktop application and its companion
+          marketing website, <strong>aicloudproxy.com</strong>. We are independent developers;
+          we are not affiliated with Ollama, DeepSeek, OpenAI, Google, Anthropic, or any other
+          AI provider.</p>
+          <p>Because the project runs without accounts, payments, or user databases, there is
+          very little personal data involved at all. This policy is written to be as honest and
+          specific as the code itself: if we don&rsquo;t collect something, we say so plainly.</p>
+        </div>
+
+        <div class="legal-section reveal" id="scope">
+          <h2>2. What this policy covers</h2>
+          <p>This policy describes how the AI Cloud Proxy <strong>website</strong> and the
+          <strong>desktop app</strong> handle information. It is not the privacy policy of any
+          cloud AI provider you connect to — for that, please see
+          <a href="#providers">Section 5</a>.</p>
+        </div>
+
+        <div class="legal-section reveal" id="website">
+          <h2>3. The website (aicloudproxy.com)</h2>
+
+          <h3>3.1 Cookies and trackers — none</h3>
+          <p>The marketing site sets <strong>no cookies</strong>, uses <strong>no
+          analytics</strong>, and loads <strong>no advertising or tracking scripts</strong>.
+          There is no cookie-consent banner because there is nothing to consent to. We do not
+          use fingerprinting, web beacons, or local storage to follow you around the internet.</p>
+
+          <h3>3.2 What is technically visible</h3>
+          <p>Like any website, the page is served over HTTPS from a standard static hosting
+          provider. To deliver the page, that provider may briefly process technical data such
+          as your IP address in server or edge logs. We do not use this information to identify
+          you or build profiles, and we do not combine it with any other data.</p>
+          <p>The site loads font files from <strong>Google Fonts</strong>
+          (<code>fonts.googleapis.com</code> / <code>fonts.gstatic.com</code>) so the page
+          displays with the intended typography. When your browser requests those files, Google
+          may receive standard connection data, which is governed by
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google&rsquo;s Privacy Policy</a>.
+          We never see or receive that data.</p>
+          <p class="note-sm">If you prefer not to make these third-party requests, you can block
+          them with a browser extension or content blocker — the site still works and reads
+          correctly with system fonts.</p>
+        </div>
+
+        <div class="legal-section reveal" id="app">
+          <h2>4. The desktop app</h2>
+
+          <h3>4.1 Settings and API keys — stored locally, never uploaded</h3>
+          <p>The app stores your configuration — the selected provider, port number, preferences,
+          per-provider API keys, base URLs, and model names — in a local JSON settings file at
+          <code>%APPDATA%\AiCloudProxy\settings.json</code> on your own Windows machine.</p>
+          <ul>
+            <li>This file <strong>never leaves your computer</strong>. There is no cloud sync,
+            no account, and no server-side copy.</li>
+            <li>The file is <em>not</em> encrypted by the app; it lives in your user profile like
+            most application configuration. Treat it as you would any file containing a
+            credential, and keep your Windows account protected.</li>
+            <li>Your API keys are used only to authenticate requests to the provider you
+            configure. They are never sent to us, and we never ask for them.</li>
+          </ul>
+
+          <h3>4.2 Chat content — direct to the provider</h3>
+          <p>When you chat through the app, the request is sent <strong>directly from your
+          machine</strong> to the cloud provider you selected (DeepSeek, OpenAI, Google Gemini,
+          Anthropic Claude, or a custom OpenAI-compatible endpoint). AI Cloud Proxy simply acts
+          as a local translator between the Ollama-style request and the provider&rsquo;s API.</p>
+          <ul>
+            <li>Your prompts and responses <strong>do not pass through any server we operate</strong>
+            — we operate none for this purpose.</li>
+            <li>We do not store, log, or read the content of your chats.</li>
+            <li>We cannot delete or retrieve them either; they are between you and the provider.</li>
+          </ul>
+
+          <h3>4.3 Logs — kept in memory on your device</h3>
+          <p>To help with troubleshooting, the app keeps a short list of runtime log entries
+          (start/stop events, requests sent, errors) visible in the <strong>Logs</strong> tab.
+          These entries are held <strong>in memory only, for the current session</strong>. They
+          are not written to disk and they disappear when the app closes.</p>
+          <p><strong>These logs are never sent to us automatically.</strong> If you contact us
+          about a problem, the app gives you a <em>Copy</em> button so you can paste relevant
+          lines into an email yourself. Only what you choose to include in that email reaches us
+          — nothing is transmitted in the background.</p>
+
+          <h3>4.4 No telemetry, no background network activity</h3>
+          <p>The app performs no analytics, no crash reporting, no usage counting, and no
+          &ldquo;phone home&rdquo; checks. When the app is idle, it makes no network requests at
+          all. The only outbound traffic is the chat traffic you trigger to the provider you
+          chose, and (optionally) auto-update checks if you add a release feed — the current
+          build has no auto-updater.</p>
+        </div>
+
+        <div class="legal-section reveal" id="providers">
+          <h2>5. Chats &amp; third-party providers</h2>
+          <p>Because AI Cloud Proxy forwards your requests to third-party cloud AI services, the
+          data-handling rules of <em>those services</em> apply to your chats. This is true no
+          matter which client you use to reach them. Please review the policy of the provider(s)
+          you use:</p>
+          <ul>
+            <li><a href="https://www.deepseek.com/privacy" target="_blank" rel="noopener">DeepSeek Privacy Policy</a></li>
+            <li><a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI Privacy Policy</a></li>
+            <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google (Gemini) Privacy Policy</a></li>
+            <li><a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic (Claude) Privacy Policy</a></li>
+          </ul>
+          <p>If you add a <strong>custom provider</strong>, your requests go to whatever endpoint
+          you configured, and that service&rsquo;s own terms and policies apply. We recommend
+          choosing providers you trust and reviewing how they use the prompts they receive.</p>
+        </div>
+
+        <div class="legal-section reveal" id="feedback">
+          <h2>6. Feedback &amp; support</h2>
+          <p>Inside the app there is a <strong>Send Feedback</strong> button. It simply opens
+          your default email client addressed to us — it does not attach or send anything by
+          itself. Anything you type into that email (and any log lines you paste) is shared with
+          us voluntarily.</p>
+          <p>Please <strong>do not include API keys or other secrets</strong> in emails or in log
+          exports. If you believe a bug requires sensitive information, mention that first and we
+          will suggest a safe way to share only what is needed.</p>
+          <p class="note-sm">Email is not an encrypted channel by default. For non-urgent
+          questions that&rsquo;s fine, but treat anything you send as you would any ordinary
+          email.</p>
+        </div>
+
+        <div class="legal-section reveal" id="retention">
+          <h2>7. Data retention &amp; deletion</h2>
+          <p><strong>We hold no data about you</strong>, so there is nothing for us to retain or
+          delete. Whatever data exists lives on your machine:</p>
+          <ul>
+            <li><strong>Settings &amp; API keys</strong> — stored in
+            <code>%APPDATA%\AiCloudProxy\settings.json</code>. Delete individual keys in the
+            app&rsquo;s Settings, or remove the whole <code>AiCloudProxy</code> folder to erase
+            everything (the app will start fresh with defaults).</li>
+            <li><strong>Logs</strong> — cleared automatically when the app closes.</li>
+            <li><strong>Uninstalling</strong> the app removes the program files. Note that, like
+            most Windows software, uninstallers do not always delete configuration folders in
+            <code>%APPDATA%</code>; remove that folder manually if you want a complete wipe.</li>
+          </ul>
+          <p>Anything you email us voluntarily (e.g. feedback or support logs) is retained only
+          as long as needed to address your request, after which it is deleted. You may ask us
+          at any time to delete emails you have sent us.</p>
+        </div>
+
+        <div class="legal-section reveal" id="children">
+          <h2>8. Children&rsquo;s privacy</h2>
+          <p>AI Cloud Proxy and its website are general developer tools intended for adults and
+          not directed at children under 13 (or under the applicable age of consent in your
+          region). Because we collect no personal data on the site or in the app, there is no
+          child data for us to collect. If you believe a child has sent us personal information,
+          contact us and we will delete it promptly.</p>
+        </div>
+
+        <div class="legal-section reveal" id="security">
+          <h2>9. Security</h2>
+          <p>Our privacy model is deliberately simple: the app is open source, keeps secrets on
+          your machine, and has no server component for us to secure. In practice that means the
+          main &ldquo;attack surface&rdquo; is your own device. Good practices that keep you
+          safe:</p>
+          <ul>
+            <li>Keep your Windows user account protected with a strong password or Windows Hello.</li>
+            <li>Do not share your <code>settings.json</code> file or paste API keys into emails,
+            chats, or public places.</li>
+            <li>The local listener binds to your machine; avoid exposing the proxy port to the
+            public internet. Anything that can reach that port can send chat requests using your
+            configured keys.</li>
+            <li>Download the app only from the official release page to avoid tampered builds.</li>
+          </ul>
+        </div>
+
+        <div class="legal-section reveal" id="rights">
+          <h2>10. Your rights &amp; choices</h2>
+          <p>Depending on where you live (including the GDPR in the EU/EEA and similar laws), you
+          have rights over your personal data. In practice, exercising them with us is simple
+          because we hold none of it:</p>
+          <ul>
+            <li><strong>Access / portability</strong> — your data is already on your device, in
+            the <code>%APPDATA%\AiCloudProxy</code> folder.</li>
+            <li><strong>Rectification</strong> — edit your settings and keys in the app at any
+            time.</li>
+            <li><strong>Erasure</strong> — delete keys in the app or remove the settings folder,
+            and clear in-memory logs by closing the app.</li>
+            <li><strong>Objection / restriction</strong> — not applicable in practice, as we
+            perform no automated decision-making and no profiling of users.</li>
+          </ul>
+          <p>To exercise any right, or to request deletion of emails you&rsquo;ve sent us, use
+          the contact details in <a href="#contact">Section 12</a>.</p>
+        </div>
+
+        <div class="legal-section reveal" id="changes">
+          <h2>11. Changes to this policy</h2>
+          <p>If we change how the website or app handles data — for example, by adding a
+          feature that transmits something new — we will update this page and revise the
+          &ldquo;Last updated&rdquo; date above. Because the project is open source, the code is
+          the ultimate reference: any claim here can be verified against the source. Material
+          changes will be called out in the release notes for the app.</p>
+        </div>
+
+        <div class="legal-section reveal" id="contact">
+          <h2>12. Contact us</h2>
+          <p>Questions, concerns, or deletion requests? Email us at
+          <a href="mailto:local1907@gmail.com?subject=AI%20Cloud%20Proxy%20Privacy">local1907@gmail.com</a>.
+          We read every message and will respond as soon as we can.</p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================= FOOTER ======================= -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="index.html" aria-label="AI Cloud Proxy home">
+          <img class="brand-mark" src="assets/logo.svg" alt="" width="30" height="30">
+          <span class="brand-name">AI&nbsp;Cloud&nbsp;Proxy</span>
+        </a>
+        <p>A free Windows app that puts cloud AI (DeepSeek, OpenAI, Gemini, Claude) behind an
+        Ollama-compatible endpoint — so your favorite tools keep working with no local models.</p>
+        <p class="fineprint">© 2026 AICloudProxy.com · MIT License · Not affiliated with Ollama or the AI providers.</p>
+        <p class="fineprint">Ollama is a trademark of its respective owner and is used here for identification and compatibility purposes only.</p>
+      </div>
+
+      <nav class="footer-col" aria-label="Site">
+        <h4>Site</h4>
+        <a href="index.html#features">Features</a>
+        <a href="index.html#how-it-works">How it works</a>
+        <a href="index.html#endpoints">Endpoints</a>
+        <a href="index.html#quick-start">Quick start</a>
+        <a href="index.html#faq">FAQ</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </nav>
+
+      <!-- Our Other Tools — cross-links our sister apps so both projects
+           benefit from each other's search-engine authority (internal linking / SEO). -->
+      <div class="footer-col footer-tools">
+        <h4>Our Other Tools</h4>
+        <a class="tool-link" href="https://www.gigtaxhelper.com/" target="_blank" rel="noopener">
+          GigTaxHelper
+        </a>
+        <p>Your simple sidekick for gig work finances — track miles &amp; expenses privately,
+        on-device. No login, no account, tax-ready records anytime.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

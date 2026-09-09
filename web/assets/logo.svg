@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Arka Plan (Yuvarlatılmış Uygulama Simgesi) -->
+  <rect width="512" height="512" rx="110" ry="110" fill="#3AAFA9"/>
+
+  <!-- Bulut -->
+  <path d="M 175,100 
+           A 65,65 0 0,1 295,120 
+           A 45,45 0 0,1 350,165 
+           A 35,35 0 0,1 315,225 
+           L 125,225 
+           A 35,35 0 0,1 90,190 
+           A 45,45 0 0,1 125,125 
+           A 60,60 0 0,1 175,100 Z" 
+        fill="#FFFFFF"/>
+
+  <!-- Robot Kafası (Bulut İçindeki Kesik Bölüm) -->
+  <g fill="#3AAFA9">
+    <!-- Anten -->
+    <circle cx="212" cy="120" r="7"/>
+    <rect x="210" y="125" width="4" height="12" rx="2"/>
+    
+    <!-- Gövde / Kafa -->
+    <rect x="180" y="137" width="64" height="48" rx="14"/>
+    <rect x="175" y="153" width="74" height="16" rx="4"/>
+    
+    <!-- Gözler -->
+    <circle cx="197" cy="161" r="5.5" fill="#FFFFFF"/>
+    <circle cx="227" cy="161" r="5.5" fill="#FFFFFF"/>
+    
+    <!-- Ağız -->
+    <rect x="204" y="174" width="16" height="3" rx="1.5" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Bağlantı Çizgileri (Proxy / Veri Akışı) -->
+  <g stroke="#FFFFFF" stroke-width="8" stroke-linecap="round">
+    <line x1="225" y1="238" x2="385" y2="330"/>
+    <line x1="213" y1="254" x2="368" y2="343"/>
+  </g>
+
+  <!-- Monitör / Ekran -->
+  <g fill="#FFFFFF">
+    <!-- Ekran Çerçevesi -->
+    <rect x="330" y="352" width="104" height="72" rx="16"/>
+    
+    <!-- Ekranın İç Kısmı (Boşluk) -->
+    <rect x="344" y="364" width="76" height="48" rx="8" fill="#3AAFA9"/>
+    
+    <!-- Monitör Ayağı ve Tabanı -->
+    <rect x="372" y="424" width="20" height="8" rx="2"/>
+    <path d="M 356,436 C 356,432 360,432 368,432 L 396,432 C 404,432 408,432 408,436 L 408,437 C 408,438 404,438 396,438 L 368,438 C 360,438 356,438 356,437 Z"/>
+  </g>
+</svg>

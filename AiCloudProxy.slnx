@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM" />
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/AiCloudProxy/AiCloudProxy.csproj" />
+  </Folder>
+  <Project Path="AI Cloud Proxy/AI Cloud Proxy.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5" Id="3c78845c-77c0-4cf7-8fb0-856f8f723101">
+    <Deploy />
+  </Project>
+</Solution>
