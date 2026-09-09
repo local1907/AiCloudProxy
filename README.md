@@ -1,10 +1,20 @@
 # AI Cloud Proxy (AICloudProxy.exe)
 
+<p align="center">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-009E9F">
+  <img alt="License" src="https://img.shields.io/github/license/local1907/AiCloudProxy">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Windows-0078D6">
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-10-512BD4">
+</p>
+
 A Windows desktop app (C# / .NET 10 / WPF) that exposes an **Ollama-compatible HTTP endpoint**
 on your machine and forwards every request to a cloud AI provider (**DeepSeek**, **OpenAI**,
 **Gemini**, or **Claude**). Tools that normally talk to Ollama (VS Code extensions, Continue,
 Cline, etc.) can be pointed at `http://127.0.0.1:<port>` and will work against your chosen
 cloud provider — no local model downloads needed.
+
+> 🔒 **Your API keys never leave your machine.** Keys are stored only in
+> `%APPDATA%\AiCloudProxy\settings.json` and are never committed to this repository.
 
 ## Screenshots
 
