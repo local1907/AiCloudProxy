@@ -34,8 +34,11 @@ web/
 ## Before you publish
 
 1. **Screenshots** — all added: `assets/screenshots/{main-window,test-tab,log-options,quick-tour,system-tray}.png`.
-2. **Download URL** — search `index.html` for `<!-- TODO` and replace the placeholder
-   `href="#download"` buttons with your real release link (e.g. a GitHub Releases URL).
+2. **Download URL** — the four Download buttons in `index.html` point at the GitHub
+   latest-release asset:
+   `https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe`.
+   It always serves the newest uploaded `AICloudProxy.exe`, so no update is needed per release —
+   only if the repo owner/name or the asset filename changes.
 3. **Social image** — `index.html` references `assets/og-image.png` for Open Graph/Twitter.
    It is already generated from `scripts/og-card.html` (open that file at a 1200×630 viewport
    and save a screenshot as `assets/og-image.png`). Re-render it whenever the tagline or brand changes.
