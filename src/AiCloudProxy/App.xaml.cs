@@ -25,7 +25,7 @@ public partial class App : System.Windows.Application
         _settings = new SettingsService();
         _log = new LogService();
 
-        _log.Info("AI Cloud Proxy starting…");
+        _log.Info($"{AppInfo.TitleWithVersion} starting…");
         _log.Info($"Settings file: {_settings.SettingsPath}");
 
         var http = HttpClientFactory.Create();

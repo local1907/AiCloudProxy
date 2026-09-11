@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:infra="clr-namespace:AiCloudProxy.Infrastructure"
         mc:Ignorable="d"
-        Title="AI Cloud Proxy"
+        Title="{Binding WindowTitle}"
         Icon="pack://application:,,,/Assets/icon.ico"
         Height="740" Width="980"
         MinHeight="620" MinWidth="840"
@@ -192,7 +192,13 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel>
-                    <TextBlock Text="AI Cloud Proxy" FontSize="20" FontWeight="SemiBold" Foreground="#111827"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="AI Cloud Proxy" FontSize="20" FontWeight="SemiBold" Foreground="#111827"/>
+                        <TextBlock Text="{Binding VersionLabel}" FontSize="12"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   VerticalAlignment="Bottom" Margin="8,0,0,4"
+                                   ToolTip="Version of the running build"/>
+                    </StackPanel>
                     <TextBlock Text="Ollama-compatible local endpoint that forwards to your AI provider"
                                FontSize="12" Foreground="{StaticResource MutedBrush}"/>
                 </StackPanel>

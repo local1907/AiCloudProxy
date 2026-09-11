@@ -1,6 +1,7 @@
 <Window x:Class="AiCloudProxy.Views.QuickTourWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:infra="clr-namespace:AiCloudProxy.Infrastructure"
         Title="Quick Tour — AI Cloud Proxy"
         Width="600" Height="640"
         MinWidth="560" MinHeight="600"
@@ -49,7 +50,11 @@
 
         <!-- Header -->
         <StackPanel Margin="0,0,0,16">
-            <TextBlock Text="🚀 Welcome to AI Cloud Proxy" FontSize="20" FontWeight="SemiBold" Foreground="#111827"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🚀 Welcome to AI Cloud Proxy" FontSize="20" FontWeight="SemiBold" Foreground="#111827"/>
+                <TextBlock Text="{x:Static infra:AppInfo.VersionLabel}" FontSize="12"
+                           Foreground="#6B7280" VerticalAlignment="Bottom" Margin="8,0,0,4"/>
+            </StackPanel>
             <TextBlock Text="A 30-second quick tour — what to do, where, and when it works."
                        FontSize="13" Foreground="#6B7280" Margin="0,4,0,0"/>
         </StackPanel>

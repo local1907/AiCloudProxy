@@ -61,8 +61,11 @@ nunit-*.xml
 # Rider
 .idea/
 
-# Local AI assistant session logs (not source)
+# Local AI assistant session logs (not source — private, never publish)
 ChatLog*.md
+
+# Local publish output (large binaries — uploaded to GitHub Releases manually, not committed)
+last publishes/
 
 # Secrets / certificates / keys (safety — never commit)
 *.pfx

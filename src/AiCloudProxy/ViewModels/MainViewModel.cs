@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using AiCloudProxy.Infrastructure;
 using AiCloudProxy.Models;
 using AiCloudProxy.Services;
 using AiCloudProxy.Services.Providers;
@@ -164,6 +165,12 @@ public class MainViewModel : ObservableObject
     }
 
     public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
+
+    /// <summary>Version of the running build shown in the header (e.g. "v1.0.8.0").</summary>
+    public string VersionLabel => AppInfo.VersionLabel;
+
+    /// <summary>Window title including the running version.</summary>
+    public string WindowTitle => AppInfo.TitleWithVersion;
 
     public string StartStopLabel => IsRunning ? "Stop Proxy" : "Start Proxy";
 

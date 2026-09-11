@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using AiCloudProxy.Infrastructure;
 
 namespace AiCloudProxy.Tray;
 
@@ -35,7 +36,7 @@ public class TrayIcon : IDisposable
         _icon = new NotifyIcon
         {
             Icon = icon,
-            Text = "AI Cloud Proxy — Stopped",
+            Text = $"{AppInfo.TitleWithVersion} — Stopped",
             Visible = true,
             ContextMenuStrip = menu,
         };
@@ -67,7 +68,9 @@ public class TrayIcon : IDisposable
     public void SetProxyRunning(bool running)
     {
         _toggleItem.Text = running ? "Stop Proxy" : "Start Proxy";
-        _icon.Text = running ? "AI Cloud Proxy — Running" : "AI Cloud Proxy — Stopped";
+        _icon.Text = running
+            ? $"{AppInfo.TitleWithVersion} — Running"
+            : $"{AppInfo.TitleWithVersion} — Stopped";
     }
 
     public void ShowBalloon(string title, string text, ToolTipIcon tip, int timeoutMs)
