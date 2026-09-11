@@ -10,10 +10,12 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>AiCloudProxy</RootNamespace>
     <AssemblyName>AICloudProxy</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.0.8.0</Version>
     <InvariantGlobalization>false</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <Platforms>AnyCPU;x86;x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,5 +34,20 @@
   <ItemGroup>
     <Resource Include="Assets\**\*" />
   </ItemGroup>
+
+  <!--
+    When the Windows Application Packaging Project builds this app from Visual Studio, it
+    points the NuGet assets file at obj\wappublish\<rid>\project.assets.json (so the packaged
+    build gets the right runtime assets) without restoring that path. The build then fails with:
+      Assets file '...\obj\wappublish\<rid>\project.assets.json' not found.
+    Restore that path on demand, right before the SDK tries to read the assets file.
+  -->
+  <Target Name="_RestoreWapPublishAssets"
+          BeforeTargets="ResolvePackageAssets"
+          Condition="'$(_RestoreWapPublishAssetsRunning)' != 'true' And '$(MSBuildProjectExtensionsPath)' != '' And $(MSBuildProjectExtensionsPath.Contains('wappublish')) And !Exists('$(ProjectAssetsFile)')">
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="Restore"
+             Properties="BaseIntermediateOutputPath=$(BaseIntermediateOutputPath);MSBuildProjectExtensionsPath=$(MSBuildProjectExtensionsPath);RuntimeIdentifier=$(RuntimeIdentifier);Configuration=$(Configuration);Platform=$(Platform);_RestoreWapPublishAssetsRunning=true" />
+  </Target>
 
 </Project>

@@ -31,6 +31,19 @@ artifacts/
 *.pdb
 *.user
 
+# MSIX / Windows Application Packaging Project output
+AppPackages/
+BundleArtifacts/
+msixpublish/
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.appxupload
+*.msixupload
+*.appxsym
+*.msixsym
+
 # Test results
 [Tt]est[Rr]esult*/
 [Bb]uild[Rr]esult*/

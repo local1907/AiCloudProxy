@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
@@ -9,7 +9,7 @@
   <Identity
     Name="LoCaL1907.AICloudProxy"
     Publisher="CN=E8E765D0-F7BD-4E6B-B608-B6A23C49FA7E"
-    Version="1.0.0.0" />
+    Version="1.0.8.0" />
 
   <Properties>
     <DisplayName>AI Cloud Proxy</DisplayName>
@@ -46,5 +46,6 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <rescap:Capability Name="runFullTrust" />
+    <Capability Name="privateNetworkClientServer"/>
   </Capabilities>
 </Package>

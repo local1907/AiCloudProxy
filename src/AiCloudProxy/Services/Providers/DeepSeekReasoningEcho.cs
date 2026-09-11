@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 namespace AiCloudProxy.Services.Providers;
 
@@ -12,58 +11,62 @@ namespace AiCloudProxy.Services.Providers;
 /// that exact reasoning_content to be sent back on every later turn of the same
 /// tool/agent conversation. Standard OpenAI-compatible clients (VS Code Copilot
 /// BYOM etc.) discard reasoning_content, so the proxy remembers the reasoning text
-/// it relayed for each assistant tool-call turn and re-injects it into the matching
-/// assistant message on the next request. Without this, DeepSeek rejects the relay
-/// with "The `reasoning_content` in the thinking mode must be passed back to the API."
+/// it relayed and re-injects it into the matching assistant message on the next
+/// request. Without this, DeepSeek rejects the relay with
+/// "The `reasoning_content` in the thinking mode must be passed back to the API."
+///
+/// The reasoning is keyed per individual tool-call id rather than per whole id set,
+/// so the match still holds when a client splits one multi-tool-call assistant turn
+/// into several messages or echoes back only a subset of the ids.
 /// </summary>
 public static class DeepSeekReasoningEcho
 {
-    private const int MaxEntries = 512;
+    private const int MaxIds = 1024;
     private static readonly object Gate = new();
-    private static readonly Dictionary<string, string> ByTurn = new();
+    private static readonly Dictionary<string, string> ByToolCallId = new();
     private static readonly Queue<string> Order = new();
 
-    /// <summary>
-    /// Order-independent signature for an assistant turn's tool-call ids. This is
-    /// stable across relayed rounds because clients echo back the same tool-call
-    /// ids they received, so the proxy can match a later request's assistant
-    /// message to the reasoning_content it originally relayed.
-    /// </summary>
-    public static string Signature(IReadOnlyList<string>? toolCallIds)
+    /// <summary>Remembers the reasoning_content produced for a set of tool-call ids.</summary>
+    public static void Record(IReadOnlyList<string>? toolCallIds, string reasoningContent)
     {
-        if (toolCallIds is not { Count: > 0 }) return "";
-        return string.Join("\u001F",
-            toolCallIds.Where(id => !string.IsNullOrEmpty(id)).OrderBy(id => id, System.StringComparer.Ordinal));
-    }
-
-    /// <summary>Remembers the reasoning_content for an assistant tool-call turn.</summary>
-    public static void Record(string signature, string reasoningContent)
-    {
-        if (string.IsNullOrEmpty(signature) || string.IsNullOrEmpty(reasoningContent)) return;
+        if (toolCallIds is not { Count: > 0 } || string.IsNullOrEmpty(reasoningContent)) return;
 
         lock (Gate)
         {
-            var isNew = !ByTurn.ContainsKey(signature);
-            if (!isNew && ByTurn[signature] == reasoningContent) return;
-
-            ByTurn[signature] = reasoningContent;
-            if (!isNew) return; // value refreshed in place; insertion order unchanged
-
-            Order.Enqueue(signature);
-            while (Order.Count > MaxEntries)
+            foreach (var id in toolCallIds)
             {
-                ByTurn.Remove(Order.Dequeue());
+                if (string.IsNullOrEmpty(id)) continue;
+
+                var isNew = !ByToolCallId.ContainsKey(id);
+                ByToolCallId[id] = reasoningContent;
+                if (isNew) Order.Enqueue(id);
+            }
+
+            while (Order.Count > MaxIds)
+            {
+                ByToolCallId.Remove(Order.Dequeue());
             }
         }
     }
 
-    /// <summary>Returns the stored reasoning_content for an assistant tool-call turn, if any.</summary>
-    public static string? Lookup(string signature)
+    /// <summary>
+    /// Returns the stored reasoning_content for any of the supplied tool-call ids.
+    /// Every id of an assistant tool-call turn maps to the same reasoning, so the
+    /// first known id is enough to recover the whole turn.
+    /// </summary>
+    public static string? Lookup(IReadOnlyList<string>? toolCallIds)
     {
-        if (string.IsNullOrEmpty(signature)) return null;
+        if (toolCallIds is not { Count: > 0 }) return null;
+
         lock (Gate)
         {
-            return ByTurn.TryGetValue(signature, out var reasoning) ? reasoning : null;
+            foreach (var id in toolCallIds)
+            {
+                if (!string.IsNullOrEmpty(id) && ByToolCallId.TryGetValue(id, out var reasoning))
+                    return reasoning;
+            }
+
+            return null;
         }
     }
 
@@ -72,7 +75,7 @@ public static class DeepSeekReasoningEcho
     {
         lock (Gate)
         {
-            ByTurn.Clear();
+            ByToolCallId.Clear();
             Order.Clear();
         }
     }
