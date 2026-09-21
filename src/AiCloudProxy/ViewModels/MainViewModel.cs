@@ -21,6 +21,9 @@ public class MainViewModel : ObservableObject
     public ObservableCollection<LogEntry> LogEntries { get; } = new();
     public ObservableCollection<string> AvailableModels { get; } = new();
 
+    /// <summary>Models offered on the Test tab (configured model + everything the provider advertised).</summary>
+    public ObservableCollection<string> TestModels { get; } = new();
+
     public RelayCommand StartStopCommand { get; }
     public RelayCommand ClearLogCommand { get; }
     public RelayCommand CopyLogCommand { get; }
@@ -31,6 +34,8 @@ public class MainViewModel : ObservableObject
     public RelayCommand RemoveCustomProviderCommand { get; }
     public RelayCommand OpenDonationPageCommand { get; }
     public RelayCommand SendFeedbackCommand { get; }
+    public RelayCommand ReportIssueCommand { get; }
+    public RelayCommand OpenIssuesPageCommand { get; }
 
     private ProviderOption _selectedProvider;
     private string _port;
@@ -44,6 +49,7 @@ public class MainViewModel : ObservableObject
     private bool _minimizeToTray = true;
     private bool _isFetchingModels;
     private string _testInput = "";
+    private string _testModel = "";
     private string _testOutput = "";
     private bool _isTesting;
     private string _keyPageUrl = "";
@@ -87,6 +93,8 @@ public class MainViewModel : ObservableObject
         RemoveCustomProviderCommand = new RelayCommand(_ => RemoveCustomProvider());
         OpenDonationPageCommand = new RelayCommand(_ => OpenDonationPage());
         SendFeedbackCommand = new RelayCommand(_ => SendFeedback());
+        ReportIssueCommand = new RelayCommand(_ => ReportIssue());
+        OpenIssuesPageCommand = new RelayCommand(_ => OpenIssuesPage());
 
         log.EntryAdded += OnLogEntry;
     }
@@ -107,6 +115,7 @@ public class MainViewModel : ObservableObject
 
             // Models are provider-specific; drop anything fetched for the old provider.
             AvailableModels.Clear();
+            RefreshTestModels();
 
             KeyPageUrl = value.KeyPageUrl;
             OnPropertyChanged(nameof(IsCustomProvider));
@@ -117,7 +126,18 @@ public class MainViewModel : ObservableObject
 
     public string ApiKey { get => _apiKey; set => Set(ref _apiKey, value); }
 
-    public string Model { get => _model; set => Set(ref _model, value); }
+    public string Model
+    {
+        get => _model;
+        set
+        {
+            if (Set(ref _model, value))
+            {
+                RefreshTestModels();
+                if (string.IsNullOrWhiteSpace(TestModel)) TestModel = value;
+            }
+        }
+    }
 
     public string BaseUrl { get => _baseUrl; set => Set(ref _baseUrl, value); }
 
@@ -147,6 +167,9 @@ public class MainViewModel : ObservableObject
 
     /// <summary>Email address where feedback should be sent.</summary>
     public string FeedbackEmail => "local1907@gmail.com";
+
+    /// <summary>Public issue tracker where bugs and inappropriate AI output can be reported.</summary>
+    public string IssuesUrl => "https://github.com/local1907/AiCloudProxy/issues/new";
 
     /// <summary>Name being typed for a new custom AI provider.</summary>
     public string NewProviderName { get => _newProviderName; set => Set(ref _newProviderName, value); }
@@ -202,17 +225,45 @@ public class MainViewModel : ObservableObject
 
     public string TestInput { get => _testInput; set => Set(ref _testInput, value); }
 
+    /// <summary>Model the test question is sent to (chosen on the Test tab).</summary>
+    public string TestModel { get => _testModel; set => Set(ref _testModel, value); }
+
     public string TestOutput { get => _testOutput; set => Set(ref _testOutput, value); }
+
+    /// <summary>
+    /// Rebuilds the Test tab's model list from the configured model plus every model
+    /// the provider advertised (via "Get Models"). The previously chosen model is kept
+    /// when it still exists, otherwise the configured model is selected.
+    /// </summary>
+    private void RefreshTestModels()
+    {
+        var previous = TestModel;
+        TestModels.Clear();
+
+        if (!string.IsNullOrWhiteSpace(Model)) TestModels.Add(Model.Trim());
+        foreach (var m in AvailableModels)
+        {
+            if (string.IsNullOrWhiteSpace(m)) continue;
+            if (!TestModels.Any(x => string.Equals(x, m, StringComparison.OrdinalIgnoreCase)))
+                TestModels.Add(m);
+        }
+
+        TestModel = !string.IsNullOrWhiteSpace(previous) &&
+                    TestModels.Any(x => string.Equals(x, previous, StringComparison.OrdinalIgnoreCase))
+            ? previous
+            : Model;
+    }
 
     // ---------- Actions ----------
 
-    public ProviderConfig BuildConfig()
+    public ProviderConfig BuildConfig(string? modelOverride = null)
     {
+        var model = string.IsNullOrWhiteSpace(modelOverride) ? Model : modelOverride;
         return new ProviderConfig
         {
             Provider = SelectedProvider?.Type ?? ProviderType.DeepSeek,
             ApiKey = ApiKey?.Trim() ?? "",
-            Model = string.IsNullOrWhiteSpace(Model) ? SelectedProvider?.DefaultModel ?? "" : Model.Trim(),
+            Model = string.IsNullOrWhiteSpace(model) ? SelectedProvider?.DefaultModel ?? "" : model.Trim(),
             BaseUrl = BaseUrl?.Trim() ?? "",
         };
     }
@@ -350,6 +401,7 @@ public class MainViewModel : ObservableObject
         // Populate the dropdown while we have the list handy.
         AvailableModels.Clear();
         foreach (var m in models) AvailableModels.Add(m);
+        RefreshTestModels();
 
         var current = cfg.Model;
         if (models.Any(m => string.Equals(m, current, StringComparison.OrdinalIgnoreCase)))
@@ -420,6 +472,7 @@ public class MainViewModel : ObservableObject
 
             AvailableModels.Clear();
             foreach (var m in models) AvailableModels.Add(m);
+            RefreshTestModels();
 
             if (AvailableModels.Count == 0)
             {
@@ -455,7 +508,7 @@ public class MainViewModel : ObservableObject
             return;
         }
 
-        var cfg = BuildConfig();
+        var cfg = BuildConfig(TestModel);
         if (string.IsNullOrWhiteSpace(cfg.ApiKey))
         {
             _log.Warn("API key is required to run a test.");
@@ -471,6 +524,11 @@ public class MainViewModel : ObservableObject
             _log.Warn("Model is required.");
             return;
         }
+
+        // Answers are labelled "model@Provider" so it is obvious which model replied —
+        // the same naming the proxy advertises to clients.
+        var providerName = SelectedProvider?.DisplayName ?? "provider";
+        var label = $"{cfg.Model}@{providerName}";
 
         IsTesting = true;
         TestOutput = "";
@@ -490,24 +548,33 @@ public class MainViewModel : ObservableObject
             };
 
             var result = await client.ChatAsync(request, _testCts.Token);
-            var tokens = result.TokenStream ?? EmptyTokens();
-            var count = 0;
-            await foreach (var token in tokens)
+            if (!string.IsNullOrWhiteSpace(result.Model)) label = $"{result.Model}@{providerName}";
+
+            if (result.TokenStream is not null)
             {
-                sb.Append(token);
-                if ((++count % 24) == 0) TestOutput = sb.ToString();
+                var count = 0;
+                await foreach (var token in result.TokenStream)
+                {
+                    sb.Append(token);
+                    if ((++count % 24) == 0) TestOutput = $"{label}: {sb}";
+                }
             }
-            TestOutput = sb.ToString();
-            _log.Info($"Test finished. Received {sb.Length} characters.");
+            else if (!string.IsNullOrEmpty(result.FullContent))
+            {
+                sb.Append(result.FullContent);
+            }
+
+            TestOutput = $"{label}: {sb}";
+            _log.Info($"Test finished. Received {sb.Length} characters from {label}.");
         }
         catch (OperationCanceledException)
         {
-            TestOutput = sb.ToString() + "\n\n[stopped by user]";
+            TestOutput = (sb.Length > 0 ? $"{label}: {sb}\n\n" : "") + "[stopped by user]";
             _log.Warn("Test stopped.");
         }
         catch (Exception ex)
         {
-            TestOutput = sb.ToString() + $"\n\n[error] {ex.Message}";
+            TestOutput = (sb.Length > 0 ? $"{label}: {sb}\n\n" : "") + $"[error] {ex.Message}";
             _log.Error("Test failed", ex);
         }
         finally
@@ -560,6 +627,74 @@ public class MainViewModel : ObservableObject
         {
             _log.Error("Could not open the email client", ex);
         }
+    }
+
+    /// <summary>
+    /// Lets the user flag inappropriate or unexpected AI-generated output. Opens the
+    /// user's own email client with a pre-filled report (including the app version and
+    /// the last question/response shown on the Test tab) so the content can be reviewed.
+    /// This satisfies the Microsoft Store requirement to provide a reporting mechanism
+    /// for products that present generative AI output to the user.
+    /// </summary>
+    private void ReportIssue()
+    {
+        try
+        {
+            var subject = Uri.EscapeDataString($"{AppInfo.TitleWithVersion} — report AI-generated content");
+            var body = Uri.EscapeDataString(BuildReportBody());
+            var mailto = $"mailto:{FeedbackEmail}?subject={subject}&body={body}";
+            Process.Start(new ProcessStartInfo(mailto) { UseShellExecute = true });
+            _log.Info($"Opened email client to report AI-generated content: {FeedbackEmail}");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Could not open the email client", ex);
+        }
+    }
+
+    /// <summary>Opens the public issue tracker as an alternative way to report a problem.</summary>
+    private void OpenIssuesPage()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(IssuesUrl) { UseShellExecute = true });
+            _log.Info($"Opened the issue tracker: {IssuesUrl}");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Could not open the browser", ex);
+        }
+    }
+
+    /// <summary>
+    /// Builds the pre-filled report body. The last question/response shown on the Test
+    /// tab is included (trimmed) so the reported AI output can be reviewed, while keeping
+    /// the mailto link within the length most email clients accept.
+    /// </summary>
+    private string BuildReportBody()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Describe the problem with the AI-generated content here.");
+        sb.AppendLine();
+        sb.AppendLine("--- details (please keep or edit) ---");
+        sb.AppendLine($"App version: {AppInfo.Version}");
+        if (_selectedProvider is not null) sb.AppendLine($"Provider: {_selectedProvider.DisplayName}");
+        var testedModel = string.IsNullOrWhiteSpace(TestModel) ? Model : TestModel;
+        if (!string.IsNullOrWhiteSpace(testedModel)) sb.AppendLine($"Model: {testedModel}");
+        sb.AppendLine();
+        sb.AppendLine("Question I used:");
+        sb.AppendLine(Excerpt(TestInput, 300));
+        sb.AppendLine();
+        sb.AppendLine("AI response:");
+        sb.AppendLine(Excerpt(TestOutput, 800));
+        return sb.ToString();
+    }
+
+    private static string Excerpt(string? text, int max)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "(none)";
+        text = text.Trim();
+        return text.Length <= max ? text : text[..max] + " … (truncated)";
     }
 
     private void LoadProviderState(ProviderOption p)
@@ -676,11 +811,5 @@ public class MainViewModel : ObservableObject
     {
         LogEntries.Add(entry);
         while (LogEntries.Count > 600) LogEntries.RemoveAt(0);
-    }
-
-    private static async IAsyncEnumerable<string> EmptyTokens()
-    {
-        await Task.CompletedTask;
-        yield break;
     }
 }

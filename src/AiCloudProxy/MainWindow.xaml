@@ -172,6 +172,32 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Used by the "Report an Issue" buttons that let users flag inappropriate AI output. -->
+        <Style x:Key="ReportButton" TargetType="Button">
+            <Setter Property="Background" Value="#DC2626"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#B91C1C"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="18">
@@ -205,6 +231,10 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="Report an Issue ⚠" Command="{Binding ReportIssueCommand}"
+                        Style="{StaticResource GhostButton}" Margin="0,0,10,0"
+                        Foreground="#DC2626"
+                        ToolTip="Report inappropriate or unexpected AI-generated output"/>
                 <Button Content="Quick Tour" Click="OnQuickTourClick"
                         Style="{StaticResource GhostButton}" Margin="0,0,10,0"
                         ToolTip="Show the first-time quick tour again"/>
@@ -448,16 +478,26 @@
                                         CornerRadius="6" Padding="14" Margin="24,0,0,0"
                                         VerticalAlignment="Center" MaxWidth="380">
                                     <StackPanel>
-                                        <TextBlock Text="💬 Feedback" FontWeight="SemiBold"
+                                        <TextBlock Text="💬 Feedback &amp; Report an Issue" FontWeight="SemiBold"
                                                    FontSize="13" Foreground="#1E40AF" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Found a bug or have an idea? Send me a quick email — nothing is stored by this app and no personal info is needed."
+                                        <TextBlock Text="Found a bug, or did the AI generate something inappropriate? Let me know — nothing is stored by this app and no personal info is needed."
                                                    FontSize="12" Foreground="#1E3A8A" Margin="0,0,0,10"/>
-                                        <Button Content="Send Feedback ✉️"
-                                                Command="{Binding SendFeedbackCommand}"
-                                                Style="{StaticResource MailButton}"
-                                                HorizontalAlignment="Left"/>
-                                        <TextBlock Text="{Binding FeedbackEmail}" FontSize="11"
-                                                   Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Send Feedback ✉️"
+                                                    Command="{Binding SendFeedbackCommand}"
+                                                    Style="{StaticResource MailButton}"/>
+                                            <Button Content="Report an Issue ⚠"
+                                                    Command="{Binding ReportIssueCommand}"
+                                                    Style="{StaticResource ReportButton}" Margin="8,0,0,0"
+                                                    ToolTip="Report inappropriate or unexpected AI-generated output"/>
+                                        </StackPanel>
+                                        <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0">
+                                            <Run Text="{Binding FeedbackEmail, Mode=OneWay}"/>
+                                            <Run Text="  ·  "/>
+                                            <Hyperlink Command="{Binding OpenIssuesPageCommand}" Foreground="{StaticResource AccentBrush}">
+                                                <Run Text="Report online"/>
+                                            </Hyperlink>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -521,19 +561,37 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Try the configured provider directly. The question uses the provider, model and API key from the Proxy Server tab — the proxy does not need to be running."
+                    <TextBlock Grid.Row="0" Text="Pick a model, ask a question, and see which model answers. The test uses the provider and API key from the Proxy Server tab — the proxy does not need to be running."
                                Style="{StaticResource Label}" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,10"/>
 
                     <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,12">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Text="Your question" Style="{StaticResource Label}"/>
-                            <TextBox Grid.Row="1" Text="{Binding TestInput, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBlock Grid.Row="0" Text="Model" Style="{StaticResource Label}"/>
+                            <Grid Grid.Row="1" Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox IsEditable="True"
+                                          ItemsSource="{Binding TestModels}"
+                                          Text="{Binding TestModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          ToolTip="Select the model to test, or type a model name. Use “Get Models” to load your provider's list."/>
+                                <Button Grid.Column="1" Content="{Binding FetchModelsLabel}"
+                                        Command="{Binding FetchModelsCommand}"
+                                        Style="{StaticResource GhostButton}"
+                                        MinWidth="86" Margin="8,0,0,0"
+                                        ToolTip="Connect to the provider and load the available models using the API key from the Proxy Server tab."/>
+                            </Grid>
+                            <TextBlock Grid.Row="2" Text="Your question" Style="{StaticResource Label}"/>
+                            <TextBox Grid.Row="3" Text="{Binding TestInput, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource InputBox}" AcceptsReturn="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Height="120" VerticalContentAlignment="Top"/>
+                                     VerticalScrollBarVisibility="Auto" Height="100" VerticalContentAlignment="Top"/>
                         </Grid>
                     </Border>
 
@@ -542,6 +600,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -549,13 +608,21 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Response" Style="{StaticResource SectionTitle}"/>
-                                <Button Grid.Column="1" Content="{Binding TestButtonLabel}" Command="{Binding TestCommand}"
-                                        Style="{StaticResource PrimaryButton}" MinWidth="130"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="Report an Issue ⚠" Command="{Binding ReportIssueCommand}"
+                                            Style="{StaticResource ReportButton}" Margin="0,0,10,0"
+                                            ToolTip="Report inappropriate or unexpected AI-generated output"/>
+                                    <Button Content="{Binding TestButtonLabel}" Command="{Binding TestCommand}"
+                                            Style="{StaticResource PrimaryButton}" MinWidth="130"/>
+                                </StackPanel>
                             </Grid>
                             <TextBox Grid.Row="1" Text="{Binding TestOutput, Mode=OneWay}"
                                      Style="{StaticResource InputBox}" IsReadOnly="True" AcceptsReturn="True"
                                      TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                                      Height="280" VerticalContentAlignment="Top" Background="#F9FAFB"/>
+                            <TextBlock Grid.Row="2" Margin="0,8,0,0" FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       Text="This response was generated by an AI model and may be inaccurate or inappropriate. Use “Report an Issue” to flag it."/>
                         </Grid>
                     </Border>
                 </Grid>

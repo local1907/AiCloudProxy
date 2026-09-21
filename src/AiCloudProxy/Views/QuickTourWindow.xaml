@@ -158,7 +158,7 @@
                         </Border>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Verify on the Test tab" FontWeight="SemiBold" FontSize="13" Foreground="#111827"/>
-                            <TextBlock Text="Open the Test tab, type a question, and send it. A reply means your provider, key and model are wired up correctly."
+                            <TextBlock Text="Open the Test tab, pick a model (or type one), type a question, and send it. The reply is shown as model@Provider, so you can see exactly which model answered — a reply means your provider, key and model are wired up correctly."
                                        FontSize="12" Foreground="#374151" Margin="0,3,0,0"/>
                         </StackPanel>
                     </Grid>
@@ -179,6 +179,26 @@
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Make it automatic (optional)" FontWeight="SemiBold" FontSize="13" Foreground="#111827"/>
                             <TextBlock Text="In Options, turn on Auto-start proxy to launch with the app, and Minimize to tray to keep it running when you close the window."
+                                       FontSize="12" Foreground="#374151" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,10"
+                        BorderBrush="#E5E7EB" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="26" Height="26" CornerRadius="13" Background="#DC2626"
+                                VerticalAlignment="Top" Margin="0,0,12,0">
+                            <TextBlock Text="7" Foreground="White" FontWeight="Bold" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Report inappropriate AI output" FontWeight="SemiBold" FontSize="13" Foreground="#111827"/>
+                            <TextBlock Text="Responses come from the AI model you chose and may be inaccurate or inappropriate. Click “Report an Issue” (in the top-right corner and next to the response on the Test tab) and your email app opens with the details pre-filled so the output can be reviewed."
                                        FontSize="12" Foreground="#374151" Margin="0,3,0,0"/>
                         </StackPanel>
                     </Grid>
