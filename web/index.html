@@ -149,6 +149,10 @@ code {
 .btn-ghost:hover { border-color: var(--blue); color: #fff; }
 .btn-light { background: #fff; color: #0b1220; }
 .btn-light:hover { transform: translateY(-1px); }
+.btn-store { background: #10192c; color: #fff; border-color: var(--line-strong); }
+.btn-store:hover { border-color: var(--blue); color: #fff; transform: translateY(-1px); }
+.btn-store .store-icon { width: 18px; height: 18px; flex: none; }
+.btn-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 
 /* ---------- Header / nav ---------- */
 .site-header {
@@ -456,6 +460,10 @@ body.nav-open .mobile-menu { display: flex; }
       </nav>
 
       <div class="nav-actions">
+        <a class="btn btn-store" href="https://apps.microsoft.com/detail/9NBB09H4P1MK" target="_blank" rel="noopener">
+          <svg class="store-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="3" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/></svg>
+          Microsoft Store
+        </a>
         <a class="btn btn-primary" href="https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe">Download</a>
         <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobileMenu">
           <span></span><span></span><span></span>
@@ -472,6 +480,10 @@ body.nav-open .mobile-menu { display: flex; }
       <a href="#screenshots">Screenshots</a>
       <a href="#faq">FAQ</a>
       <a class="btn btn-primary" href="https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe">Download</a>
+      <a class="btn btn-store" href="https://apps.microsoft.com/detail/9NBB09H4P1MK" target="_blank" rel="noopener">
+        <svg class="store-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="3" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/></svg>
+        Microsoft Store
+      </a>
     </nav>
   </header>
 
@@ -490,6 +502,10 @@ body.nav-open .mobile-menu { display: flex; }
           </p>
           <div class="hero-cta reveal">
             <a class="btn btn-primary btn-lg" href="https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe">Download for Windows</a>
+            <a class="btn btn-store btn-lg" href="https://apps.microsoft.com/detail/9NBB09H4P1MK" target="_blank" rel="noopener">
+              <svg class="store-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="3" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/></svg>
+              Microsoft Store
+            </a>
             <a class="btn btn-ghost btn-lg" href="#quick-start">Quick start →</a>
           </div>
           <ul class="hero-badges reveal" aria-label="Highlights">
@@ -683,6 +699,14 @@ body.nav-open .mobile-menu { display: flex; }
           <li><span class="step-num">6</span><div>Use the <strong>Test</strong> tab to send a sample question and verify the stream.</div></li>
         </ol>
 
+        <div class="btn-row reveal">
+          <a class="btn btn-primary btn-lg" href="https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe">Download for Windows</a>
+          <a class="btn btn-store btn-lg" href="https://apps.microsoft.com/detail/9NBB09H4P1MK" target="_blank" rel="noopener">
+            <svg class="store-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="3" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/></svg>
+            Microsoft Store
+          </a>
+        </div>
+
         <div class="callout reveal">
           <h3>Visual Studio 2026 Copilot (BYOM)</h3>
           <p>AI Cloud Proxy advertises tool-calling capabilities and token limits via
@@ -813,7 +837,13 @@ body.nav-open .mobile-menu { display: flex; }
       <div class="container">
         <h2 class="reveal">Stop downloading models. Start streaming.</h2>
         <p class="reveal">Bring your favorite cloud AI into the tools you already use.</p>
-        <div class="reveal"><a class="btn btn-light btn-lg" href="https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe">Download AI Cloud Proxy</a></div>
+        <div class="btn-row reveal">
+          <a class="btn btn-light btn-lg" href="https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe">Download AI Cloud Proxy</a>
+          <a class="btn btn-store btn-lg" href="https://apps.microsoft.com/detail/9NBB09H4P1MK" target="_blank" rel="noopener">
+            <svg class="store-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="3" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="3" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/><rect x="12.8" y="12.8" width="8.2" height="8.2" rx="0.4" fill="currentColor"/></svg>
+            Get it from Microsoft Store
+          </a>
+        </div>
       </div>
     </section>
   </main>
@@ -840,6 +870,7 @@ body.nav-open .mobile-menu { display: flex; }
         <a href="#quick-start">Quick start</a>
         <a href="#faq">FAQ</a>
         <a href="privacy.html">Privacy Policy</a>
+        <a href="https://apps.microsoft.com/detail/9NBB09H4P1MK" target="_blank" rel="noopener">Microsoft Store</a>
       </nav>
 
       <!-- Our Other Tools — cross-links our sister apps so both projects

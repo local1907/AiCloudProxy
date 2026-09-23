@@ -43,11 +43,14 @@ web/
    These are **separate files**: upload the whole `assets/` folder to the web root (next to
    `index.html`). If a screenshot is missing on the host, the page shows a tidy
    “Screenshot coming soon” placeholder instead of a broken image — never a broken layout.
-2. **Download URL** — the four Download buttons in `index.html` point at the GitHub
+2. **Download buttons** — the Download buttons in `index.html` point at the GitHub
    latest-release asset:
    `https://github.com/local1907/AiCloudProxy/releases/latest/download/AICloudProxy.exe`.
    It always serves the newest uploaded `AICloudProxy.exe`, so no update is needed per release —
    only if the repo owner/name or the asset filename changes.
+   The **Microsoft Store** buttons (header, mobile menu, hero, quick start, final CTA and both
+   footers) point at the live listing `https://apps.microsoft.com/detail/9NBB09H4P1MK`. If the
+   Store product ID ever changes, update every occurrence with a find-and-replace.
 3. **Social image** — `index.html` references `assets/og-image.png` for Open Graph/Twitter.
    It is already generated from `scripts/og-card.html` (open that file at a 1200×630 viewport
    and save a screenshot as `assets/og-image.png`). Re-render it whenever the tagline or brand changes.
