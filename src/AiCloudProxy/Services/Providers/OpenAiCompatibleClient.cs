@@ -30,7 +30,12 @@ public class OpenAiCompatibleClient : IProviderClient
     public string Model => _cfg.Model;
 
     private string BaseUrl => string.IsNullOrWhiteSpace(_cfg.BaseUrl)
-        ? (_cfg.Provider == ProviderType.DeepSeek ? "https://api.deepseek.com" : "https://api.openai.com/v1")
+        ? _cfg.Provider switch
+        {
+            ProviderType.DeepSeek => "https://api.deepseek.com",
+            ProviderType.Meta => "https://api.meta.ai/v1",
+            _ => "https://api.openai.com/v1",
+        }
         : _cfg.BaseUrl.TrimEnd('/');
 
     public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct)

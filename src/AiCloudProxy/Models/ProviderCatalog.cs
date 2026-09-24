@@ -29,5 +29,9 @@ public static class ProviderCatalog
             "claude-sonnet-4-5-20250929",
             "https://api.anthropic.com",
             "https://console.anthropic.com/settings/keys"),
+        new(ProviderType.Meta, "Meta", "Meta (Muse)",
+            "muse-spark-1.3",
+            "https://api.meta.ai/v1",
+            "https://dev.meta.ai/"),
     };
 }

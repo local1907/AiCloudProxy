@@ -14,12 +14,18 @@ public class ProviderFactory
         _log = log;
     }
 
-    public IProviderClient Create(ProviderConfig cfg)
+    /// <param name="requireModel">
+    /// When <c>true</c> (the default) a model must be configured, because chat/completion
+    /// requests need one. Pass <c>false</c> for listing-only operations such as fetching the
+    /// model list — those only need the API key and base URL, so requiring a model there would
+    /// make "Get Models" fail before the user could pick one.
+    /// </param>
+    public IProviderClient Create(ProviderConfig cfg, bool requireModel = true)
     {
         if (string.IsNullOrWhiteSpace(cfg.ApiKey))
             throw new ProviderException("API key is not configured. Enter your provider API key and try again.");
 
-        if (string.IsNullOrWhiteSpace(cfg.Model))
+        if (requireModel && string.IsNullOrWhiteSpace(cfg.Model))
             throw new ProviderException("Model is not configured. Select a provider or enter a model name.");
 
         return cfg.Provider switch

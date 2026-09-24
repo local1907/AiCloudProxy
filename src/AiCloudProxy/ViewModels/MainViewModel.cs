@@ -382,7 +382,7 @@ public class MainViewModel : ObservableObject
         IReadOnlyList<string> models;
         try
         {
-            var client = _factory.Create(cfg);
+            var client = _factory.Create(cfg, requireModel: false);
             models = await client.ListModelsAsync(CancellationToken.None);
         }
         catch (Exception ex)
@@ -467,7 +467,7 @@ public class MainViewModel : ObservableObject
         IsFetchingModels = true;
         try
         {
-            var client = _factory.Create(cfg);
+            var client = _factory.Create(cfg, requireModel: false);
             var models = await client.ListModelsAsync(CancellationToken.None);
 
             AvailableModels.Clear();

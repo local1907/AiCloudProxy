@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -10,7 +10,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>AiCloudProxy</RootNamespace>
     <AssemblyName>AICloudProxy</AssemblyName>
-    <Version>1.0.9.0</Version>
+    <Version>1.0.11.0</Version>
     <InvariantGlobalization>false</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>

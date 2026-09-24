@@ -7,4 +7,5 @@ public enum ProviderType
     Gemini = 2,
     Claude = 3,
     Custom = 4,
+    Meta = 5,
 }

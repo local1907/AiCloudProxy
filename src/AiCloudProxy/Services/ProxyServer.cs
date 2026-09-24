@@ -162,7 +162,7 @@ public class ProxyServer
     {
         try
         {
-            var client = _factory.Create(cfg);
+            var client = _factory.Create(cfg, requireModel: false);
             var models = await client.ListModelsAsync(CancellationToken.None);
             if (models.Count == 0) return null;
             _log.Info($"Discovered {models.Count} model(s) from the provider: {string.Join(", ", models)}");
@@ -252,6 +252,7 @@ public class ProxyServer
             ProviderType.OpenAI => new(128_000, 16_384, true, true, "openai"),
             ProviderType.Gemini => new(1_000_000, 8_192, true, true, "google"),
             ProviderType.Claude => new(200_000, 16_384, true, true, "anthropic"),
+            ProviderType.Meta => new(1_048_576, 16_384, true, true, "meta"),
             _ => new(32_768, 4_096, true, true, "api"),
         };
     }
