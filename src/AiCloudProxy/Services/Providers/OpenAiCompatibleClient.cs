@@ -38,6 +38,23 @@ public class OpenAiCompatibleClient : IProviderClient
         }
         : _cfg.BaseUrl.TrimEnd('/');
 
+    /// <summary>
+    /// True for DeepSeek endpoints, which in thinking mode refuse a tool/agent round unless
+    /// every assistant turn carries a non-empty reasoning_content.
+    /// </summary>
+    private bool NeedsReasoningEcho =>
+        _cfg.Provider == ProviderType.DeepSeek ||
+        BaseUrl.Contains("deepseek", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Written when DeepSeek thinking mode needs a reasoning_content value but the original
+    /// chain of thought is gone (the proxy was restarted, the cache evicted it, or the turn
+    /// predates this session). DeepSeek only checks that the field is present and non-empty,
+    /// so a short marker keeps the agent conversation alive instead of failing with HTTP 400
+    /// "The reasoning_content in the thinking mode must be passed back to the API".
+    /// </summary>
+    private const string MissingReasoningPlaceholder = "(reasoning omitted)";
+
     public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct)
     {
         using var msg = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/models");
@@ -220,13 +237,14 @@ public class OpenAiCompatibleClient : IProviderClient
         var parsed = JsonNode.Parse(request.RawBody!);
         parsed!["model"] = request.Model;
         // DeepSeek (thinking mode) demands the reasoning_content of every previous
-        // assistant tool-call turn; the client dropped it, so put it back.
-        var (restored, unresolved) = ReinjectReasoningContent(parsed);
-        if (unresolved > 0)
-        {
-            _log.Warn($"reasoning echo: restored {restored} of {restored + unresolved} assistant tool-call turn(s); " +
-                      $"{unresolved} could not be matched to cached reasoning.");
-        }
+        // assistant turn while tools are in play; the client dropped it, so put it back.
+        var (restored, filled, unmatched) = ReinjectReasoningContent(parsed, NeedsReasoningEcho);
+        if (restored > 0)
+            _log.Info($"reasoning echo: restored reasoning_content on {restored} assistant turn(s) from cache.");
+        if (filled > 0)
+            _log.Info($"reasoning echo: filled missing reasoning_content on {filled} assistant turn(s) with a placeholder.");
+        if (unmatched > 0)
+            _log.Warn($"reasoning echo: {unmatched} assistant turn(s) still lack reasoning_content.");
         var json = parsed.ToJsonString();
 
         using var msg = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/chat/completions")
@@ -265,6 +283,7 @@ public class OpenAiCompatibleClient : IProviderClient
             // with tool_calls, remember its reasoning_content so it can be echoed
             // back on the next round of the same tool/agent conversation.
             var reasoning = new StringBuilder();
+            var content = new StringBuilder();
             var toolIds = new HashSet<string>();
             try
             {
@@ -279,14 +298,14 @@ public class OpenAiCompatibleClient : IProviderClient
                     if (data.IsEmpty) continue;
                     var payload = data.ToString();
                     if (payload == "[DONE]") yield break;
-                    CaptureReasoningDelta(payload, reasoning, toolIds);
+                    CaptureReasoningDelta(payload, reasoning, content, toolIds);
                     yield return payload;
                 }
             }
             finally
             {
                 response.Dispose();
-                DeepSeekReasoningEcho.Record(toolIds.ToList(), reasoning.ToString());
+                DeepSeekReasoningEcho.Record(toolIds.ToList(), content.ToString(), reasoning.ToString());
             }
         }
 
@@ -305,46 +324,75 @@ public class OpenAiCompatibleClient : IProviderClient
     }
 
     /// <summary>
-    /// Adds reasoning_content back to assistant tool-call messages that are missing
-    /// it but whose tool-call ids match a previously relayed reasoning turn.
+    /// Adds reasoning_content back to assistant messages that are missing it: tool-call
+    /// turns are matched by their tool-call ids, tool-less turns by their text. When a turn
+    /// cannot be matched and <paramref name="fillMissing"/> is set, a placeholder is written
+    /// instead of leaving the field absent, because DeepSeek thinking mode rejects the whole
+    /// round with HTTP 400 ("The reasoning_content in the thinking mode must be passed back
+    /// to the API"). Historical turns are routinely unmatched — a restarted proxy has no
+    /// cache for them and every OpenAI-compatible client strips reasoning_content — so
+    /// omitting the field is not an option. Returns how many turns were restored from cache,
+    /// how many were filled with the placeholder and how many were left untouched.
     /// </summary>
-    private static (int Restored, int Unresolved) ReinjectReasoningContent(JsonNode root)
+    private static (int Restored, int Filled, int Unmatched) ReinjectReasoningContent(JsonNode root, bool fillMissing)
     {
-        if (root is not JsonObject obj || obj["messages"] is not JsonArray msgs) return (0, 0);
+        if (root is not JsonObject obj || obj["messages"] is not JsonArray msgs) return (0, 0, 0);
 
+        var toolsInPlay = obj["tools"] is JsonArray { Count: > 0 } || obj["tool_choice"] is not null;
         var restored = 0;
-        var unresolved = 0;
+        var filled = 0;
+        var unmatched = 0;
 
         foreach (var m in msgs)
         {
             if (m is not JsonObject msg) continue;
             if (!string.Equals(JsonHelpers.GetStringValue(msg["role"]), "assistant", StringComparison.OrdinalIgnoreCase))
                 continue;
-            if (msg["tool_calls"] is not JsonArray calls || calls.Count == 0) continue;
             // Client already preserved a non-empty reasoning for this turn — leave it
             // alone. An empty string still counts as missing because DeepSeek rejects it.
             if (JsonHelpers.GetStringValue(msg["reasoning_content"]) is { Length: > 0 }) continue;
 
-            var ids = new List<string>();
-            foreach (var call in calls)
+            if (msg["tool_calls"] is JsonArray { Count: > 0 } calls)
             {
-                if (call is not JsonObject co) continue;
-                var id = JsonHelpers.GetStringValue(co["id"]);
-                if (!string.IsNullOrEmpty(id)) ids.Add(id!);
-            }
+                var ids = new List<string>();
+                foreach (var call in calls)
+                {
+                    if (call is not JsonObject co) continue;
+                    var id = JsonHelpers.GetStringValue(co["id"]);
+                    if (!string.IsNullOrEmpty(id)) ids.Add(id!);
+                }
 
-            var reasoning = DeepSeekReasoningEcho.Lookup(ids);
-            if (reasoning is null)
-            {
-                unresolved++;
+                var reasoning = DeepSeekReasoningEcho.Lookup(ids);
+                if (reasoning is null)
+                {
+                    if (!fillMissing) { unmatched++; continue; }
+                    msg["reasoning_content"] = MissingReasoningPlaceholder;
+                    filled++;
+                    continue;
+                }
+
+                msg["reasoning_content"] = reasoning;
+                restored++;
                 continue;
             }
 
-            msg["reasoning_content"] = reasoning;
+            // With tools in the request DeepSeek also requires the reasoning_content of
+            // turns where the model called no tool. The client dropped it, so match those
+            // turns by the text it echoed back for them.
+            var plainReasoning = DeepSeekReasoningEcho.LookupByContent(JsonHelpers.GetStringValue(msg["content"]));
+            if (plainReasoning is null)
+            {
+                if (!fillMissing || !toolsInPlay) continue;
+                msg["reasoning_content"] = MissingReasoningPlaceholder;
+                filled++;
+                continue;
+            }
+
+            msg["reasoning_content"] = plainReasoning;
             restored++;
         }
 
-        return (restored, unresolved);
+        return (restored, filled, unmatched);
     }
 
     /// <summary>Records reasoning_content from a non-stream relayed completion body.</summary>
@@ -374,7 +422,11 @@ public class OpenAiCompatibleClient : IProviderClient
                 }
             }
 
-            DeepSeekReasoningEcho.Record(ids, reasoning ?? "");
+            string? content = null;
+            if (message.TryGetProperty("content", out var cc) && cc.ValueKind == JsonValueKind.String)
+                content = cc.GetString();
+
+            DeepSeekReasoningEcho.Record(ids, content, reasoning ?? "");
         }
         catch (JsonException)
         {
@@ -382,8 +434,8 @@ public class OpenAiCompatibleClient : IProviderClient
         }
     }
 
-    /// <summary>Accumulates reasoning_content text and tool-call ids from an SSE chunk.</summary>
-    private static void CaptureReasoningDelta(string payload, StringBuilder reasoning, HashSet<string> toolIds)
+    /// <summary>Accumulates reasoning_content, assistant text and tool-call ids from an SSE chunk.</summary>
+    private static void CaptureReasoningDelta(string payload, StringBuilder reasoning, StringBuilder content, HashSet<string> toolIds)
     {
         try
         {
@@ -396,6 +448,12 @@ public class OpenAiCompatibleClient : IProviderClient
                 rc.GetString() is { Length: > 0 } text)
             {
                 reasoning.Append(text);
+            }
+
+            if (delta.TryGetProperty("content", out var cc) && cc.ValueKind == JsonValueKind.String &&
+                cc.GetString() is { Length: > 0 } text2)
+            {
+                content.Append(text2);
             }
 
             if (delta.TryGetProperty("tool_calls", out var calls) && calls.ValueKind == JsonValueKind.Array)

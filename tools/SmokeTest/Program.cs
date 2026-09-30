@@ -24,6 +24,9 @@ internal static class Program
     private static int _passed;
     private static int _failed;
 
+    /// <summary>Raw body of the last /v1/chat/completions request the proxy relayed to the fake provider.</summary>
+    private static string _lastChatBody = "";
+
     private static async Task<int> Main()
     {
         Console.WriteLine("AI Cloud Proxy — smoke test");
@@ -308,6 +311,24 @@ internal static class Program
                 var content = doc?["message"]?["content"]?.GetValue<string>() ?? "";
                 Assert(content == "Hello world!", $"expected default (DeepSeek) response, got '{content}': {text}");
             });
+
+            // DeepSeek thinking mode rejects a tool round ("reasoning_content in the thinking
+            // mode must be passed back to the API") when an assistant tool-call turn has no
+            // reasoning_content. The client strips it and historical turns are not cached, so
+            // the proxy must backfill the field before relaying.
+            await Check("DeepSeek tool round backfills missing reasoning_content", async () =>
+            {
+                _lastChatBody = "";
+                var body = """{"model":"deepseek-v4-flash@DeepSeek","stream":false,"tools":[{"type":"function","function":{"name":"ask","description":"ask","parameters":{"type":"object","properties":{}}}}],"messages":[{"role":"user","content":"go"},{"role":"assistant","content":"","tool_calls":[{"id":"call_abc","type":"function","function":{"name":"ask","arguments":"{}"}}]},{"role":"tool","tool_call_id":"call_abc","content":"answer"}]}""";
+                await http.PostAsync("/v1/chat/completions", Json(body));
+
+                var relayed = JsonNode.Parse(_lastChatBody);
+                var assistant = relayed?["messages"]?.AsArray()
+                    .FirstOrDefault(m => m?["role"]?.GetValue<string>() == "assistant" && m?["tool_calls"] is not null);
+                var reasoning = assistant?["reasoning_content"]?.GetValue<string>();
+                Assert(!string.IsNullOrEmpty(reasoning),
+                    $"assistant tool-call turn is missing reasoning_content: {_lastChatBody}");
+            });
         }
         finally
         {
@@ -331,6 +352,7 @@ internal static class Program
         {
             using var reader = new StreamReader(ctx.Request.Body);
             var body = await reader.ReadToEndAsync(ct);
+            _lastChatBody = body;
             var stream = body.Contains("\"stream\":true");
             ctx.Response.ContentType = stream ? "text/event-stream" : "application/json";
 

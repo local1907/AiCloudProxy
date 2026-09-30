@@ -18,33 +18,61 @@ namespace AiCloudProxy.Services.Providers;
 /// The reasoning is keyed per individual tool-call id rather than per whole id set,
 /// so the match still holds when a client splits one multi-tool-call assistant turn
 /// into several messages or echoes back only a subset of the ids.
+///
+/// When the request carries tools, DeepSeek also demands the reasoning_content of
+/// turns where the model called no tool, so those turns are keyed by their text —
+/// which the client echoes back verbatim in the conversation history.
 /// </summary>
 public static class DeepSeekReasoningEcho
 {
     private const int MaxIds = 1024;
+    private const int MaxContentKeys = 1024;
     private static readonly object Gate = new();
     private static readonly Dictionary<string, string> ByToolCallId = new();
     private static readonly Queue<string> Order = new();
+    private static readonly Dictionary<string, string> ByContent = new();
+    private static readonly Queue<string> ContentOrder = new();
 
-    /// <summary>Remembers the reasoning_content produced for a set of tool-call ids.</summary>
-    public static void Record(IReadOnlyList<string>? toolCallIds, string reasoningContent)
+    /// <summary>
+    /// Remembers the reasoning_content produced for one assistant turn. Turns that
+    /// requested tools are keyed by tool-call id; plain assistant turns (no tool call)
+    /// are keyed by the turn's text, which the client echoes back verbatim.
+    /// </summary>
+    public static void Record(IReadOnlyList<string>? toolCallIds, string? assistantContent, string reasoningContent)
     {
-        if (toolCallIds is not { Count: > 0 } || string.IsNullOrEmpty(reasoningContent)) return;
+        if (string.IsNullOrEmpty(reasoningContent)) return;
 
         lock (Gate)
         {
-            foreach (var id in toolCallIds)
+            if (toolCallIds is { Count: > 0 })
             {
-                if (string.IsNullOrEmpty(id)) continue;
+                foreach (var id in toolCallIds)
+                {
+                    if (string.IsNullOrEmpty(id)) continue;
 
-                var isNew = !ByToolCallId.ContainsKey(id);
-                ByToolCallId[id] = reasoningContent;
-                if (isNew) Order.Enqueue(id);
+                    var isNew = !ByToolCallId.ContainsKey(id);
+                    ByToolCallId[id] = reasoningContent;
+                    if (isNew) Order.Enqueue(id);
+                }
+
+                while (Order.Count > MaxIds)
+                {
+                    ByToolCallId.Remove(Order.Dequeue());
+                }
+
+                return;
             }
 
-            while (Order.Count > MaxIds)
+            var key = NormalizeContent(assistantContent);
+            if (key is null) return;
+
+            var contentIsNew = !ByContent.ContainsKey(key);
+            ByContent[key] = reasoningContent;
+            if (contentIsNew) ContentOrder.Enqueue(key);
+
+            while (ContentOrder.Count > MaxContentKeys)
             {
-                ByToolCallId.Remove(Order.Dequeue());
+                ByContent.Remove(ContentOrder.Dequeue());
             }
         }
     }
@@ -70,6 +98,21 @@ public static class DeepSeekReasoningEcho
         }
     }
 
+    /// <summary>
+    /// Returns the stored reasoning_content for an assistant turn that called no tool,
+    /// identified by the text the model answered with.
+    /// </summary>
+    public static string? LookupByContent(string? assistantContent)
+    {
+        var key = NormalizeContent(assistantContent);
+        if (key is null) return null;
+
+        lock (Gate)
+        {
+            return ByContent.TryGetValue(key, out var reasoning) ? reasoning : null;
+        }
+    }
+
     /// <summary>Drops all cached reasoning (e.g. when the proxy is stopped).</summary>
     public static void Clear()
     {
@@ -77,6 +120,11 @@ public static class DeepSeekReasoningEcho
         {
             ByToolCallId.Clear();
             Order.Clear();
+            ByContent.Clear();
+            ContentOrder.Clear();
         }
     }
+
+    private static string? NormalizeContent(string? content)
+        => string.IsNullOrWhiteSpace(content) ? null : content.Trim();
 }
