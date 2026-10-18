@@ -24,4 +24,11 @@ public class AppSettings
 
     /// <summary>Last used model per provider key.</summary>
     public Dictionary<string, string> Models { get; set; } = new();
+
+    /// <summary>
+    /// Model-ID keywords hidden from the advertised model lists (Options tab).
+    /// <c>null</c> means "never configured" → <see cref="Services.ModelFilter.DefaultBannedKeywords"/>
+    /// seeds it. An empty list means nothing is filtered by name.
+    /// </summary>
+    public List<string>? BannedModelKeywords { get; set; }
 }

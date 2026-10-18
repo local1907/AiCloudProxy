@@ -8,4 +8,5 @@ public enum ProviderType
     Claude = 3,
     Custom = 4,
     Meta = 5,
+    OpenRouter = 6,
 }

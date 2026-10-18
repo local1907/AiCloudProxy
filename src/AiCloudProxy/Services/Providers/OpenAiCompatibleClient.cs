@@ -34,9 +34,26 @@ public class OpenAiCompatibleClient : IProviderClient
         {
             ProviderType.DeepSeek => "https://api.deepseek.com",
             ProviderType.Meta => "https://api.meta.ai/v1",
+            ProviderType.OpenRouter => "https://openrouter.ai/api/v1",
             _ => "https://api.openai.com/v1",
         }
         : _cfg.BaseUrl.TrimEnd('/');
+
+    /// <summary>True for OpenRouter, where model IDs are namespaced slugs ("vendor/model").</summary>
+    private bool IsOpenRouter =>
+        _cfg.Provider == ProviderType.OpenRouter ||
+        BaseUrl.Contains("openrouter", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// OpenRouter recommends identifying the calling app for its leaderboards; these
+    /// headers are optional and ignored by every other OpenAI-compatible provider.
+    /// </summary>
+    private void AddOpenRouterHeaders(HttpRequestMessage msg)
+    {
+        if (!IsOpenRouter) return;
+        msg.Headers.TryAddWithoutValidation("HTTP-Referer", "https://aicloudproxy.com");
+        msg.Headers.TryAddWithoutValidation("X-Title", "AI Cloud Proxy");
+    }
 
     /// <summary>
     /// True for DeepSeek endpoints, which in thinking mode refuse a tool/agent round unless
@@ -59,6 +76,7 @@ public class OpenAiCompatibleClient : IProviderClient
     {
         using var msg = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/models");
         msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _cfg.ApiKey);
+        AddOpenRouterHeaders(msg);
 
         using var response = await _http.SendAsync(msg, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -112,6 +130,7 @@ public class OpenAiCompatibleClient : IProviderClient
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
         msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _cfg.ApiKey);
+        AddOpenRouterHeaders(msg);
 
         var completion = request.Stream ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead;
         var response = await _http.SendAsync(msg, completion, ct).ConfigureAwait(false);
@@ -238,13 +257,13 @@ public class OpenAiCompatibleClient : IProviderClient
         parsed!["model"] = request.Model;
         // DeepSeek (thinking mode) demands the reasoning_content of every previous
         // assistant turn while tools are in play; the client dropped it, so put it back.
-        var (restored, filled, unmatched) = ReinjectReasoningContent(parsed, NeedsReasoningEcho);
+        // Providers that do not require the echo (everything else) legitimately have
+        // assistant turns without reasoning_content — that is not a problem to report.
+        var (restored, filled, _) = ReinjectReasoningContent(parsed, NeedsReasoningEcho);
         if (restored > 0)
             _log.Info($"reasoning echo: restored reasoning_content on {restored} assistant turn(s) from cache.");
         if (filled > 0)
             _log.Info($"reasoning echo: filled missing reasoning_content on {filled} assistant turn(s) with a placeholder.");
-        if (unmatched > 0)
-            _log.Warn($"reasoning echo: {unmatched} assistant turn(s) still lack reasoning_content.");
         var json = parsed.ToJsonString();
 
         using var msg = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/chat/completions")
@@ -252,6 +271,7 @@ public class OpenAiCompatibleClient : IProviderClient
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
         msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _cfg.ApiKey);
+        AddOpenRouterHeaders(msg);
 
         var completion = request.Stream ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead;
         var response = await _http.SendAsync(msg, completion, ct).ConfigureAwait(false);

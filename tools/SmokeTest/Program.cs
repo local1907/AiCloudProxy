@@ -158,6 +158,25 @@ internal static class Program
                 Assert(content == "Hello world!", $"content mismatch: '{content}'");
             });
 
+            await Check("POST /chat/completions (no /v1 prefix alias) -> JSON", async () =>
+            {
+                var body = """{"model":"deepseek-v4-flash","messages":[{"role":"user","content":"hi"}],"stream":false}""";
+                var res = await http.PostAsync("/chat/completions", Json(body));
+                Assert(res.IsSuccessStatusCode, $"expected 2xx, got {(int)res.StatusCode}");
+                var text = await res.Content.ReadAsStringAsync();
+                var doc = JsonNode.Parse(text);
+                var content = doc?["choices"]?[0]?["message"]?["content"]?.GetValue<string>() ?? "";
+                Assert(content == "Hello world!", $"content mismatch: '{content}'");
+            });
+
+            await Check("GET /models (no /v1 prefix alias) -> OpenAI format", async () =>
+            {
+                var res = await http.GetStringAsync("/models");
+                var doc = JsonNode.Parse(res);
+                var data = doc?["data"]?.AsArray();
+                Assert(data?.Count >= 2, $"expected >=2 models: {res}");
+            });
+
             await Check("Invalid JSON -> 400", async () =>
             {
                 var res = await http.PostAsync("/api/chat", new StringContent("not json", Encoding.UTF8, "application/json"));
@@ -329,6 +348,43 @@ internal static class Program
                 Assert(!string.IsNullOrEmpty(reasoning),
                     $"assistant tool-call turn is missing reasoning_content: {_lastChatBody}");
             });
+
+            // The model filter keyword list is editable from the Options tab, so it must be
+            // swappable at runtime and an empty list must disable name-based filtering.
+            await Check("ModelFilter hides default banned keywords", () =>
+            {
+                Assert(!ModelFilter.IsTextChatModel("gemini-2.5-flash-preview-tts"),
+                    "default filter should hide a TTS model");
+                Assert(!ModelFilter.IsTextChatModel("text-embedding-3-small"),
+                    "default filter should hide an embedding model");
+                Assert(ModelFilter.IsTextChatModel("gemini-2.5-flash"),
+                    "default filter should keep a normal chat model");
+                return Task.CompletedTask;
+            });
+
+            await Check("ModelFilter honours a custom keyword list", () =>
+            {
+                ModelFilter.SetBannedKeywords(ModelFilter.ParseKeywords("lyria\r\nmusic, music;\r\n image "));
+
+                Assert(ModelFilter.ParseKeywords("a,b\r\nc").SequenceEqual(new[] { "a", "b", "c" }),
+                    "ParseKeywords should split on newlines/commas/semicolons and drop duplicates");
+                Assert(ModelFilter.IsTextChatModel("gemini-2.5-flash-preview-tts"),
+                    "custom list should allow the TTS model");
+                Assert(!ModelFilter.IsTextChatModel("lyria-3"), "custom list should hide lyria-3");
+                Assert(!ModelFilter.IsTextChatModel("gpt-image-1"), "custom list should hide image models");
+                return Task.CompletedTask;
+            });
+
+            await Check("ModelFilter with an empty list hides nothing", () =>
+            {
+                ModelFilter.SetBannedKeywords(ModelFilter.ParseKeywords("   \r\n "));
+                Assert(ModelFilter.BannedKeywords.Count == 0, "blank input should clear the list");
+                Assert(ModelFilter.IsTextChatModel("text-embedding-3-small"),
+                    "an empty list should stop name-based filtering");
+                return Task.CompletedTask;
+            });
+
+            ModelFilter.SetBannedKeywords(ModelFilter.DefaultBannedKeywords);
         }
         finally
         {

@@ -33,5 +33,9 @@ public static class ProviderCatalog
             "muse-spark-1.3",
             "https://api.meta.ai/v1",
             "https://dev.meta.ai/"),
+        new(ProviderType.OpenRouter, "OpenRouter", "OpenRouter",
+            "openai/gpt-oss-120b",
+            "https://openrouter.ai/api/v1",
+            "https://openrouter.ai/keys"),
     };
 }

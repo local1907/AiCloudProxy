@@ -86,11 +86,24 @@ public class ProxyServer
             _defaultKey = _routes[0].Key;
 
         var builder = WebApplication.CreateSlimBuilder();
-        builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
+        // Bind "localhost" (IPv4 127.0.0.1 AND IPv6 [::1]) so clients that resolve
+        // localhost to ::1 first — e.g. Visual Studio's Ollama/BYOM provider — connect
+        // reliably. Still loopback-only, so nothing is exposed to the network.
+        builder.WebHost.UseUrls($"http://localhost:{port}");
         builder.Logging.ClearProviders();
         builder.Logging.SetMinimumLevel(LogLevel.None);
 
         var app = builder.Build();
+
+        // Log any request path we do not implement. If a client (VS Copilot BYOM,
+        // etc.) starts calling a newer endpoint after an update, the exact path shows
+        // up in the app log instead of failing silently.
+        app.Use(next => async (HttpContext ctx) =>
+        {
+            await next(ctx);
+            if (ctx.Response.StatusCode == StatusCodes.Status404NotFound)
+                _log.Warn($"404 {ctx.Request.Method} {ctx.Request.Path} — endpoint not implemented.");
+        });
 
         app.MapPost("/api/chat", async (HttpContext ctx, CancellationToken ct) =>
             await HandleOllamaAsync(ctx, isGenerate: false, ct));
@@ -101,16 +114,27 @@ public class ProxyServer
         app.MapPost("/v1/chat/completions", async (HttpContext ctx, CancellationToken ct) =>
             await HandleOpenAiAsync(ctx, ct));
 
+        // Alias without the "/v1" prefix. Some OpenAI-compatible clients (and hand-typed
+        // base URLs) end up posting to "/chat/completions" instead of
+        // "/v1/chat/completions"; accepting both turns a 404 into a working request.
+        app.MapPost("/chat/completions", async (HttpContext ctx, CancellationToken ct) =>
+            await HandleOpenAiAsync(ctx, ct));
+
         app.MapGet("/api/tags", (HttpContext ctx) => HandleTags(ctx));
         app.MapGet("/api/show", async (HttpContext ctx, CancellationToken ct) => await HandleShowAsync(ctx, ct));
         app.MapPost("/api/show", async (HttpContext ctx, CancellationToken ct) => await HandleShowAsync(ctx, ct));
+        app.MapGet("/api/ps", () => Results.Json(new { models = Array.Empty<object>() }));
         app.MapGet("/v1/models", (HttpContext ctx) => HandleOpenAiModels(ctx));
+        app.MapGet("/v1/models/{id}", (HttpContext ctx, string id) => HandleOpenAiModel(ctx, id));
+        // Same "/v1"-optional aliasing as chat/completions above.
+        app.MapGet("/models", (HttpContext ctx) => HandleOpenAiModels(ctx));
+        app.MapGet("/models/{id}", (HttpContext ctx, string id) => HandleOpenAiModel(ctx, id));
         app.MapGet("/api/version", () => Results.Json(new { version = "0.1.0" }));
         app.MapGet("/", () => Results.Json(new
         {
             name = "AI Cloud Proxy",
             status = "ok",
-            endpoints = new[] { "/api/chat", "/api/generate", "/api/show", "/v1/chat/completions", "/api/tags", "/v1/models" },
+            endpoints = new[] { "/api/chat", "/api/generate", "/api/show", "/api/ps", "/v1/chat/completions", "/chat/completions", "/api/tags", "/v1/models", "/models" },
         }));
 
         _app = app;
@@ -253,6 +277,7 @@ public class ProxyServer
             ProviderType.Gemini => new(1_000_000, 8_192, true, true, "google"),
             ProviderType.Claude => new(200_000, 16_384, true, true, "anthropic"),
             ProviderType.Meta => new(1_048_576, 16_384, true, true, "meta"),
+            ProviderType.OpenRouter => new(256_000, 16_384, true, true, "openrouter"),
             _ => new(32_768, 4_096, true, true, "api"),
         };
     }
@@ -693,14 +718,18 @@ public class ProxyServer
     /// <summary>
     /// Ollama /api/show: returns model metadata + capabilities so clients such as
     /// Visual Studio 2026 Copilot BYOM can enable the model (tools) and set token limits.
-    /// Supports both GET ?model= and POST with a JSON body.
+    /// Supports GET ?model=/?name= and POST with a JSON body using either the newer
+    /// "model" field or the older "name" field (Ollama accepts both).
     /// </summary>
     private async Task HandleShowAsync(HttpContext ctx, CancellationToken ct)
     {
         string? requested = null;
-        if (HttpMethods.IsGet(ctx.Request.Method) && ctx.Request.Query.TryGetValue("model", out var q))
+        if (HttpMethods.IsGet(ctx.Request.Method))
         {
-            requested = q.ToString();
+            if (ctx.Request.Query.TryGetValue("model", out var qm))
+                requested = qm.ToString();
+            else if (ctx.Request.Query.TryGetValue("name", out var qn))
+                requested = qn.ToString();
         }
         else if (HttpMethods.IsPost(ctx.Request.Method))
         {
@@ -710,7 +739,8 @@ public class ProxyServer
             try
             {
                 var body = JsonNode.Parse(raw);
-                requested = body?["model"]?.GetValue<string>();
+                requested = JsonHelpers.GetStringValue(body?["model"])
+                    ?? JsonHelpers.GetStringValue(body?["name"]);
             }
             catch { /* ignore malformed body, fall back to the default model */ }
         }
@@ -775,7 +805,12 @@ public class ProxyServer
         };
     }
 
-    /// <summary>OpenAI-compatible model list (GET /v1/models) for clients that populate a picker from it.</summary>
+    /// <summary>
+    /// OpenAI-compatible model list (GET /v1/models) for clients that populate a picker
+    /// from it. Each entry also carries capability/limit metadata so OpenAI-style BYOM
+    /// clients (e.g. Visual Studio 2026's Agent harness, which talks to the Ollama
+    /// provider over /v1) can enable the model (tool calling / vision) and size context.
+    /// </summary>
     private IResult HandleOpenAiModels(HttpContext ctx)
     {
         var ids = new List<object>();
@@ -785,13 +820,61 @@ public class ProxyServer
             foreach (var model in names)
             {
                 if (string.IsNullOrWhiteSpace(model)) continue;
-                ids.Add(new { id = $"{model}@{route.Key}", @object = "model", created = 0L, owned_by = "ai-cloud-proxy" });
+                ids.Add(BuildOpenAiModel($"{model}@{route.Key}", GetProfile(route.Config, model)));
             }
         }
 
         _log.Info($"[{ctx.Request.Path}] advertising {ids.Count} model(s)");
         return Results.Json(new { @object = "list", data = ids.ToArray() });
     }
+
+    /// <summary>Single OpenAI-style model resource (GET /v1/models/{id}).</summary>
+    private IResult HandleOpenAiModel(HttpContext ctx, string id)
+    {
+        var (route, model) = Resolve(NormalizeModelName(Uri.UnescapeDataString(id)));
+        var qualified = string.IsNullOrWhiteSpace(model)
+            ? (string.IsNullOrWhiteSpace(route.DefaultModel) ? route.Key : route.DefaultModel)
+            : $"{model}@{route.Key}";
+        _log.Info($"[{ctx.Request.Path}] model={qualified}");
+        return Results.Json(BuildOpenAiModel(qualified, GetProfile(route.Config, model)));
+    }
+
+    /// <summary>
+    /// One OpenAI-compatible model entry plus the capability/limit extras that BYOM
+    /// clients read to decide whether a model can be enabled (tools/vision) and how
+    /// large its context window is.
+    /// </summary>
+    private static object BuildOpenAiModel(string id, ModelProfile p) => new
+    {
+        id,
+        @object = "model",
+        created = 0L,
+        owned_by = "ai-cloud-proxy",
+        context_length = p.ContextLength,
+        max_output_tokens = p.MaxOutput,
+        supports_tools = p.SupportsTools,
+        supports_tool_calls = p.SupportsTools,
+        supports_vision = p.SupportsVision,
+        capabilities = new
+        {
+            @object = "model_capabilities",
+            family = p.Family,
+            type = "chat",
+            limits = new
+            {
+                max_context_window_tokens = p.ContextLength,
+                max_prompt_tokens = p.ContextLength,
+                max_output_tokens = p.MaxOutput,
+            },
+            supports = new
+            {
+                streaming = true,
+                tool_calls = p.SupportsTools,
+                parallel_tool_calls = p.SupportsTools,
+                vision = p.SupportsVision,
+            },
+        },
+    };
 
     private static async Task<string> CollectAsync(IAsyncEnumerable<string> tokens, CancellationToken ct)
     {

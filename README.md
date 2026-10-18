@@ -9,7 +9,7 @@
 
 A Windows desktop app (C# / .NET 10 / WPF) that exposes an **Ollama-compatible HTTP endpoint**
 on your machine and forwards every request to a cloud AI provider (**DeepSeek**, **OpenAI**,
-**Gemini**, or **Claude**). Tools that normally talk to Ollama (VS Code extensions, Continue,
+**Gemini**, **Claude**, or **OpenRouter**). Tools that normally talk to Ollama (VS Code extensions, Continue,
 Cline, etc.) can be pointed at `http://127.0.0.1:<port>` and will work against your chosen
 cloud provider — no local model downloads needed.
 
@@ -50,6 +50,7 @@ cloud provider — no local model downloads needed.
 - **Test tab** — ask a question and stream the answer directly from the selected provider.
 - **Copyable log** — "Copy" puts all log lines on the clipboard (the proxy log is otherwise read-only).
 - **Model auto-discovery** — "Get Models" fetches the provider's live model list; on Start the configured model is validated against it and you're warned (switch / continue / cancel) if it no longer exists.
+- **Editable model filter** — choose which models get advertised by editing a keyword list in the **Options** tab; for example un-hide music/sound-effect/audio/TTS/image models if you need them. Applies instantly, no restart. See [Model filter](#model-filter--choose-which-models-are-advertised).
 - **Multi-provider routing** — every provider with a saved API key is **active at the same time**. `GET /api/tags` advertises all their models with qualified `model@Provider` names (e.g. `deepseek-v4-flash@DeepSeek`, `gemini-2.5-flash@Gemini`); each request routes to the provider that owns the requested model, and unknown names fall back to the currently selected provider. Use the qualified name when the same model exists on more than one provider.
 - **API key links** — "Get API Key ↗" opens the right key page for the selected provider.
 - Settings persist to `%APPDATA%\AiCloudProxy\settings.json`.
@@ -61,7 +62,7 @@ Your tool (Ollama client)
       │  POST http://127.0.0.1:11435/api/chat   (Ollama wire format)
       ▼
  AICloudProxy.exe  ── in-process listener ── translates ──►  Provider API
-      │                                               (DeepSeek / OpenAI / Gemini / Claude)
+       │                                               (DeepSeek / OpenAI / Gemini / Claude / OpenRouter)
       └────────  Ollama-format stream back  ◄────────┘
 ```
 
@@ -73,11 +74,13 @@ The app translates between the Ollama wire format and each provider's native for
 | OpenAI   | `gpt-4o-mini`             | OpenAI-compatible |
 | Gemini   | `gemini-2.5-flash`        | `generateContent` |
 | Claude   | `claude-sonnet-4-5-20250929` | Anthropic Messages |
+| OpenRouter | `openai/gpt-oss-120b` | OpenAI-compatible |
 | Custom   | (yours)                   | OpenAI-compatible |
 
-> **Custom providers:** any OpenAI-compatible endpoint works (OpenRouter, vLLM, LM Studio, …).
+> **Custom providers:** any OpenAI-compatible endpoint works (vLLM, LM Studio, …).
 > When you add one, put the **full API path** in the Base URL field — e.g. `https://openrouter.ai/api/v1`,
 > not just `https://openrouter.ai` — because the app appends `/chat/completions` and `/models` to it.
+> (OpenRouter itself is now a built-in provider, so no custom setup is needed for it.)
 
 > **Gemini note (2026):** Google now rejects old **"Standard"/unrestricted** API keys
 > with `401/403`. Create a fresh key at https://aistudio.google.com/apikey — all new
@@ -121,6 +124,48 @@ Output lands in `src/AiCloudProxy/bin/Release/net10.0-windows/win-x64/publish/AI
 6. In your tool that normally talks to Ollama, set the base URL to `http://127.0.0.1:11435` (or your chosen port).
 7. Use the **Test** tab to send a sample question and verify everything works.
 
+## Model filter — choose which models are advertised
+
+`GET /api/tags` and `GET /v1/models` advertise every model the provider reports, **minus a
+keyword filter**. A model whose ID contains one of the keywords is hidden, so non-chat entries
+(embeddings, TTS, image/video/music generators, experimental previews, …) don't clutter your
+tool's model picker.
+
+The list is **editable in the app** — no rebuild, no restart.
+
+1. Open the **Options** card (main window, below the API key).
+2. Find **"Model filter — hidden keywords"**.
+3. Edit the text — **one keyword per line**; commas and semicolons also separate, case does not
+   matter, blank lines and duplicates are ignored.
+4. The change applies **immediately**: click **Get Models** to refresh the dropdown, or simply
+   **Start Proxy** again. The log shows
+   `Model filter hides N keyword(s) — edit them in Options.`
+
+*Example — you build games and want music/sound-effect models back:* delete the `music`,
+`lyria`, `sound`, `audio`, `speech`, `tts`, `whisper` and `transcri` lines, leaving the rest
+in place.
+
+- **Clear the whole box** to hide nothing (name-based filtering off).
+- **"Restore default filter list"** puts the factory list back.
+- The list is stored with your other settings in `%APPDATA%\AiCloudProxy\settings.json`
+  (`BannedModelKeywords`).
+
+Factory default (29 keywords):
+
+```
+embedding, embed, dall-e, dalle, whisper, tts, speech, realtime, audio, moderation, transcri,
+imagen, veo, pali, aqa, nano-banana, banana, image, music, lyria, sound, jewels, search,
+tuning, gemma-2b, antigravity, computer-use, robotics, vision-only
+```
+
+> **Things to know**
+> - `antigravity`, `computer-use` and `robotics` (Gemini) reject normal chat with
+>   *"Multiturn chat is not enabled"* — keep them filtered unless your client handles them.
+> - The proxy implements **no `/v1/embeddings` endpoint** yet, so un-hiding `embedding`/`embed`
+>   only makes those models *visible*; they still cannot be used for chat through this app.
+> - Provider capability metadata is applied **on top of** the keyword list: e.g. Gemini models
+>   that cannot `generateContent` are always hidden, whatever the list says.
+
 ## Visual Studio 2026 Copilot (BYOM / Bring Your Own Model)
 
 VS 2026's Copilot Chat can use AI Cloud Proxy through its **Ollama** provider. It needs the
@@ -135,9 +180,19 @@ in the model picker.
 3. Enter the AI Cloud Proxy URL: `http://127.0.0.1:11435` (or your port).
 4. Use **Agent (Preview)** mode and select one of the discovered models.
 
+> **VS 18.10 breaking change (BYOK) — models greyed out / not selectable?** In Visual Studio 2026
+> 18.10, BYOK works **only in the new **Agent (Preview)** mode ("Enhanced with the Copilot CLI
+> SDK"); the older Ask/Agent BYOK experience is no longer supported. If your AI Cloud Proxy models
+> load but appear greyed out, **start a NEW chat thread first** — a chat mode cannot be changed
+> mid-conversation, so **Agent (Preview)** itself stays greyed in an existing thread — then pick
+> **Agent (Preview)** and select your model. (VS's own tooltip: *"This mode can't be used in the
+> current conversation. Start a new chat to switch to it."* and *"Your own models work only in
+> Agent (Preview). Switch or create a new thread to use them."*) Also **re-add** the Ollama provider
+> once, as VS 18.10 changed that provider's backend.
+>
 > If models still don't show up after an update, remove and **re-add** the Ollama
-> provider (VS 18.10 Insiders dropped previously added Ollama models across a
-> backend update). As a manual fallback you can edit
+> provider (VS 18.10 dropped previously added Ollama models across a backend update).
+> As a manual fallback you can edit
 > `%USERPROFILE%\AppData\Local\Microsoft\VisualStudio\Copilot\BringYourOwnModel\ConfiguredBringYourOwnModel_v2.json`
 > and set `"IsToolCallingEnabled": true` for your models.
 

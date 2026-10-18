@@ -471,6 +471,23 @@
                                     <CheckBox Content="Auto-start proxy when the app launches" IsChecked="{Binding AutoStartProxy}"/>
                                     <CheckBox Content="Minimize to system tray when closing the window"
                                               IsChecked="{Binding MinimizeToTray}" Margin="0,8,0,0"/>
+
+                                    <TextBlock Text="Model filter — hidden keywords" Style="{StaticResource Label}"
+                                               FontWeight="SemiBold" Margin="0,18,0,0"/>
+                                    <TextBox Text="{Binding BannedModelKeywordsText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource InputBox}"
+                                             AcceptsReturn="True" TextWrapping="Wrap" Height="120"
+                                             VerticalContentAlignment="Top"
+                                             VerticalScrollBarVisibility="Auto"
+                                             FontFamily="Consolas" FontSize="11"
+                                             ToolTip="One keyword per line. A model whose ID contains any of these words is hidden from the model lists. Clear the box to hide nothing."/>
+                                    <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                               Margin="0,6,0,0" TextWrapping="Wrap"
+                                               Text="One per line (commas also work). Models whose ID contains one of these words are hidden. Clear the box to hide nothing. Applies to 'Get Models' and the next proxy start."/>
+                                    <Button Content="Restore default filter list"
+                                            Command="{Binding ResetModelFilterCommand}"
+                                            Style="{StaticResource GhostButton}"
+                                            HorizontalAlignment="Left" Margin="0,8,0,0"/>
                                 </StackPanel>
 
                                 <!-- Feedback -->

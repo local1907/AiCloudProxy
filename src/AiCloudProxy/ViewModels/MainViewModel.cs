@@ -36,6 +36,7 @@ public class MainViewModel : ObservableObject
     public RelayCommand SendFeedbackCommand { get; }
     public RelayCommand ReportIssueCommand { get; }
     public RelayCommand OpenIssuesPageCommand { get; }
+    public RelayCommand ResetModelFilterCommand { get; }
 
     private ProviderOption _selectedProvider;
     private string _port;
@@ -54,6 +55,7 @@ public class MainViewModel : ObservableObject
     private bool _isTesting;
     private string _keyPageUrl = "";
     private string _newProviderName = "";
+    private string _bannedModelKeywordsText = "";
     private CancellationTokenSource? _testCts;
 
     public MainViewModel(SettingsService settings, LogService log, ProxyServer server, ProviderFactory factory)
@@ -80,6 +82,13 @@ public class MainViewModel : ObservableObject
         _port = s.Port.ToString();
         _autoStartProxy = s.AutoStartProxy;
         _minimizeToTray = s.MinimizeToTray;
+
+        // Model filter: seed the factory default the first time so the Options tab
+        // shows — and can edit — exactly which models are hidden.
+        s.BannedModelKeywords ??= ModelFilter.DefaultBannedKeywords.ToList();
+        ModelFilter.SetBannedKeywords(s.BannedModelKeywords);
+        _bannedModelKeywordsText = string.Join(Environment.NewLine, s.BannedModelKeywords);
+
         LoadProviderState(_selectedProvider);
         KeyPageUrl = _selectedProvider.KeyPageUrl;
 
@@ -95,6 +104,7 @@ public class MainViewModel : ObservableObject
         SendFeedbackCommand = new RelayCommand(_ => SendFeedback());
         ReportIssueCommand = new RelayCommand(_ => ReportIssue());
         OpenIssuesPageCommand = new RelayCommand(_ => OpenIssuesPage());
+        ResetModelFilterCommand = new RelayCommand(_ => ResetModelFilter());
 
         log.EntryAdded += OnLogEntry;
     }
@@ -146,6 +156,24 @@ public class MainViewModel : ObservableObject
     public bool AutoStartProxy { get => _autoStartProxy; set => Set(ref _autoStartProxy, value); }
 
     public bool MinimizeToTray { get => _minimizeToTray; set => Set(ref _minimizeToTray, value); }
+
+    /// <summary>
+    /// Model-ID keywords hidden from the advertised model lists, one per line
+    /// (Options tab). Edits apply immediately, so "Get Models" and the next proxy
+    /// start use them without an app restart. Clearing the box hides nothing.
+    /// </summary>
+    public string BannedModelKeywordsText
+    {
+        get => _bannedModelKeywordsText;
+        set
+        {
+            if (!Set(ref _bannedModelKeywordsText, value)) return;
+
+            var keywords = ModelFilter.ParseKeywords(value);
+            ModelFilter.SetBannedKeywords(keywords);
+            _settings.Settings.BannedModelKeywords = keywords.ToList();
+        }
+    }
 
     public string KeyPageUrl
     {
@@ -320,12 +348,8 @@ public class MainViewModel : ObservableObject
         if (_server.IsRunning) return;
 
         var cfg = BuildConfig();
-        if (string.IsNullOrWhiteSpace(cfg.ApiKey))
-        {
-            _log.Warn("Cannot start: no API key. Enter your provider API key first.");
-            return;
-        }
-        if (SelectedProvider?.Type == ProviderType.Custom && string.IsNullOrWhiteSpace(cfg.BaseUrl))
+        var hasSelectedKey = !string.IsNullOrWhiteSpace(cfg.ApiKey);
+        if (hasSelectedKey && SelectedProvider?.Type == ProviderType.Custom && string.IsNullOrWhiteSpace(cfg.BaseUrl))
         {
             _log.Warn("Cannot start: enter a Base URL for your custom AI provider first.");
             return;
@@ -338,12 +362,19 @@ public class MainViewModel : ObservableObject
 
         // Validate the configured model against the provider before starting.
         // The user keeps full control: they can switch, continue anyway, or cancel.
-        var (cancelled, newModel, models) = await ValidateAndMaybeFixModelAsync(cfg);
-        if (cancelled) return;
-        if (!string.IsNullOrWhiteSpace(newModel))
+        // Only done when the selected provider has a key — other providers are still
+        // started from their saved keys even if this one is not configured yet.
+        IReadOnlyList<string>? models = null;
+        if (hasSelectedKey)
         {
-            Model = newModel;
-            cfg = BuildConfig(); // rebuild with the corrected model
+            var (cancelled, newModel, discovered) = await ValidateAndMaybeFixModelAsync(cfg);
+            if (cancelled) return;
+            models = discovered;
+            if (!string.IsNullOrWhiteSpace(newModel))
+            {
+                Model = newModel;
+                cfg = BuildConfig(); // rebuild with the corrected model
+            }
         }
 
         _settings.Settings.Port = port;
@@ -354,6 +385,13 @@ public class MainViewModel : ObservableObject
             // All configured providers (with a saved key) are active at once;
             // requests route to the provider that owns the requested model.
             var routes = BuildActiveRoutes();
+            if (routes.Count == 0)
+            {
+                _log.Warn("Cannot start: no provider has an API key yet. Enter a key " +
+                          "(and, for a custom provider, a Base URL) for at least one provider.");
+                return;
+            }
+
             var defaultKey = SelectedProvider?.Key ?? routes[0].Key;
             var known = new Dictionary<string, IReadOnlyList<string>>();
             if (models is { Count: > 0 } && SelectedProvider is not null)
@@ -363,6 +401,19 @@ public class MainViewModel : ObservableObject
             IsRunning = true;
             StatusText = $"Running on http://127.0.0.1:{port}";
             _log.Info($"Active providers: {string.Join(", ", routes.Select(r => r.Key))} — default: {defaultKey}");
+
+            // Providers listed in the dropdown but skipped because they have no saved API
+            // key (or, for a custom provider, no Base URL) would otherwise silently never
+            // show up in the "Active providers" line above. Spell them out so it is obvious
+            // why e.g. a provider the user picked is missing.
+            var activeKeys = new HashSet<string>(routes.Select(r => r.Key), StringComparer.OrdinalIgnoreCase);
+            var inactive = Providers.Where(p => !activeKeys.Contains(p.Key)).Select(p => p.Key).ToList();
+            if (inactive.Count > 0)
+                _log.Info($"Not active — no API key saved: {string.Join(", ", inactive)}");
+
+            // Makes "why is model X missing?" answerable from the log alone.
+            if (ModelFilter.BannedKeywords.Count > 0)
+                _log.Info($"Model filter hides {ModelFilter.BannedKeywords.Count} keyword(s) — edit them in Options.");
         }
         catch
         {
@@ -695,6 +746,13 @@ public class MainViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(text)) return "(none)";
         text = text.Trim();
         return text.Length <= max ? text : text[..max] + " … (truncated)";
+    }
+
+    /// <summary>Restores the factory default model filter keyword list.</summary>
+    private void ResetModelFilter()
+    {
+        BannedModelKeywordsText = string.Join(Environment.NewLine, ModelFilter.DefaultBannedKeywords);
+        _log.Info($"Model filter reset to the default list ({ModelFilter.DefaultBannedKeywords.Length} keywords).");
     }
 
     private void LoadProviderState(ProviderOption p)
