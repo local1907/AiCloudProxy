@@ -65,6 +65,11 @@ public partial class App : System.Windows.Application
         MainWindow = _window;
         _window.Show();
 
+        // Non-blocking update check so a stale standalone install is noticed right away.
+        // The result shows as a banner (and in the Options tab); startup is never delayed.
+        if (_settings.Settings.CheckForUpdates)
+            Dispatcher.BeginInvoke(async () => await _vm.CheckForUpdatesAsync());
+
         // First-run quick tour (shown only once; reopenable from the header button).
         if (!_settings.Settings.HasSeenTour)
         {

@@ -31,4 +31,10 @@ public class AppSettings
     /// seeds it. An empty list means nothing is filtered by name.
     /// </summary>
     public List<string>? BannedModelKeywords { get; set; }
+
+    /// <summary>Check GitHub for a newer release each time the app starts (Options tab).</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
+    /// <summary>Release version the user chose to skip, so its banner is not shown again.</summary>
+    public string? SkippedUpdateVersion { get; set; }
 }

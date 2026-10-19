@@ -385,6 +385,51 @@ internal static class Program
             });
 
             ModelFilter.SetBannedKeywords(ModelFilter.DefaultBannedKeywords);
+
+            // The startup update check compares the running build with the newest GitHub
+            // release, so tag parsing and version ordering must not report false updates.
+            await Check("UpdateService compares versions", () =>
+            {
+                Assert(UpdateService.IsNewer("1.0.14.0", "v1.0.15.0"), "v1.0.15.0 should be newer than 1.0.14.0");
+                Assert(UpdateService.IsNewer("1.0.14.0", "1.0.14.1"), "1.0.14.1 should be newer than 1.0.14.0");
+                Assert(!UpdateService.IsNewer("1.0.14.0", "v1.0.14.0"), "same version is not an update");
+                Assert(!UpdateService.IsNewer("1.0.14.0", "v1.0.13.9"), "older version is not an update");
+                Assert(!UpdateService.IsNewer("1.0.14.0", "not-a-version"), "unparsable tags must not nag users");
+                Assert(UpdateService.NormalizeVersion("v1.0.14.0+abc1234") == "1.0.14.0",
+                    "build metadata must be stripped");
+                return Task.CompletedTask;
+            });
+
+            await Check("UpdateService parses the latest release", () =>
+            {
+                const string release = """
+                {
+                  "tag_name": "v1.0.15.0",
+                  "html_url": "https://github.com/local1907/AiCloudProxy/releases/tag/v1.0.15.0",
+                  "assets": [
+                    { "name": "notes.txt", "browser_download_url": "https://example.test/notes.txt" },
+                    { "name": "AICloudProxy.exe", "browser_download_url": "https://example.test/AICloudProxy.exe" }
+                  ]
+                }
+                """;
+
+                var info = UpdateService.ParseRelease(release);
+                Assert(info is not null, "release JSON should parse");
+                Assert(info!.Version == "1.0.15.0", $"version mismatch: {info.Version}");
+                Assert(info.DownloadUrl == "https://example.test/AICloudProxy.exe",
+                    $"exe asset not selected: {info.DownloadUrl}");
+                Assert(UpdateService.IsNewer("1.0.14.0", info.Version), "parsed release should be an update");
+                return Task.CompletedTask;
+            });
+
+            await Check("UpdateService tolerates a release without assets", () =>
+            {
+                var info = UpdateService.ParseRelease("""{"tag_name":"v2.0.0","html_url":"https://example.test/r"}""");
+                Assert(info is not null && info.DownloadUrl is null, "release without assets should still parse");
+                Assert(info!.ReleaseUrl == "https://example.test/r", $"release url mismatch: {info.ReleaseUrl}");
+                Assert(UpdateService.ParseRelease("""{"tag_name":""}""") is null, "missing tag should return null");
+                return Task.CompletedTask;
+            });
         }
         finally
         {

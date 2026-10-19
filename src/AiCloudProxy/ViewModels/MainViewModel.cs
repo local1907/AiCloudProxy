@@ -37,6 +37,10 @@ public class MainViewModel : ObservableObject
     public RelayCommand ReportIssueCommand { get; }
     public RelayCommand OpenIssuesPageCommand { get; }
     public RelayCommand ResetModelFilterCommand { get; }
+    public RelayCommand CheckForUpdatesCommand { get; }
+    public RelayCommand OpenUpdateCommand { get; }
+    public RelayCommand OpenReleaseNotesCommand { get; }
+    public RelayCommand SkipUpdateCommand { get; }
 
     private ProviderOption _selectedProvider;
     private string _port;
@@ -56,6 +60,11 @@ public class MainViewModel : ObservableObject
     private string _keyPageUrl = "";
     private string _newProviderName = "";
     private string _bannedModelKeywordsText = "";
+    private readonly UpdateService _updates = new();
+    private UpdateInfo? _latestUpdate;
+    private bool _isUpdateAvailable;
+    private bool _isCheckingForUpdates;
+    private string _updateStatusText = "Not checked yet.";
     private CancellationTokenSource? _testCts;
 
     public MainViewModel(SettingsService settings, LogService log, ProxyServer server, ProviderFactory factory)
@@ -105,6 +114,10 @@ public class MainViewModel : ObservableObject
         ReportIssueCommand = new RelayCommand(_ => ReportIssue());
         OpenIssuesPageCommand = new RelayCommand(_ => OpenIssuesPage());
         ResetModelFilterCommand = new RelayCommand(_ => ResetModelFilter());
+        CheckForUpdatesCommand = new RelayCommand(_ => _ = CheckForUpdatesAsync(userInitiated: true));
+        OpenUpdateCommand = new RelayCommand(_ => OpenUpdate());
+        OpenReleaseNotesCommand = new RelayCommand(_ => OpenReleaseNotes());
+        SkipUpdateCommand = new RelayCommand(_ => SkipUpdate());
 
         log.EntryAdded += OnLogEntry;
     }
@@ -174,6 +187,71 @@ public class MainViewModel : ObservableObject
             _settings.Settings.BannedModelKeywords = keywords.ToList();
         }
     }
+
+    /// <summary>
+    /// Check GitHub for a newer release every time the app starts (Options tab).
+    /// Turning it on runs a check immediately; turning it off stops the startup check.
+    /// </summary>
+    public bool CheckForUpdates
+    {
+        get => _settings.Settings.CheckForUpdates;
+        set
+        {
+            if (_settings.Settings.CheckForUpdates == value) return;
+
+            _settings.Settings.CheckForUpdates = value;
+            _settings.Save();
+            OnPropertyChanged();
+            _log.Info(value
+                ? "Update check enabled — the app will check GitHub for a newer release at startup."
+                : "Update check disabled — no automatic update check at startup.");
+
+            if (value) _ = CheckForUpdatesAsync(userInitiated: true);
+        }
+    }
+
+    /// <summary>True when a newer release was found and the user has not skipped it.</summary>
+    public bool IsUpdateAvailable
+    {
+        get => _isUpdateAvailable;
+        private set => Set(ref _isUpdateAvailable, value);
+    }
+
+    public bool IsCheckingForUpdates
+    {
+        get => _isCheckingForUpdates;
+        private set => Set(ref _isCheckingForUpdates, value);
+    }
+
+    /// <summary>Result of the last check shown in the Options tab.</summary>
+    public string UpdateStatusText
+    {
+        get => _updateStatusText;
+        private set => Set(ref _updateStatusText, value);
+    }
+
+    public string UpdateBannerTitle =>
+        _latestUpdate is null ? "" : $"Update available — v{_latestUpdate.Version}";
+
+    /// <summary>Banner body text; Store builds update automatically, standalone builds download the exe.</summary>
+    public string UpdateBannerText
+    {
+        get
+        {
+            if (_latestUpdate is null) return "";
+
+            return UpdateService.IsPackaged
+                ? $"You are running {AppInfo.VersionLabel}. The Microsoft Store installs updates automatically — new releases can take a few days to reach the Store."
+                : $"You are running {AppInfo.VersionLabel}. Download the new version from GitHub — your settings and API keys are kept.";
+        }
+    }
+
+    /// <summary>Text for the banner's main button (Store listing, direct exe, or release page).</summary>
+    public string UpdateActionLabel => UpdateService.IsPackaged
+        ? "Open Microsoft Store"
+        : _latestUpdate?.DownloadUrl is not null
+            ? "Download update"
+            : "Open release page";
 
     public string KeyPageUrl
     {
@@ -753,6 +831,113 @@ public class MainViewModel : ObservableObject
     {
         BannedModelKeywordsText = string.Join(Environment.NewLine, ModelFilter.DefaultBannedKeywords);
         _log.Info($"Model filter reset to the default list ({ModelFilter.DefaultBannedKeywords.Length} keywords).");
+    }
+
+    // ---------- Updates ----------
+
+    /// <summary>
+    /// Checks GitHub for a newer release and surfaces it in the banner / Options tab.
+    /// Startup checks fail quietly (logged as info); a manual check logs a warning.
+    /// Must be awaited on the UI thread — the property updates drive WPF bindings.
+    /// </summary>
+    public async Task CheckForUpdatesAsync(bool userInitiated = false)
+    {
+        if (IsCheckingForUpdates) return;
+
+        IsCheckingForUpdates = true;
+        UpdateStatusText = "Checking for updates…";
+        if (userInitiated) _log.Info("Checking GitHub for a newer release…");
+
+        try
+        {
+            var result = await _updates.CheckAsync(AppInfo.Version);
+
+            if (!result.Succeeded || result.Latest is null)
+            {
+                UpdateStatusText = "Could not check for updates.";
+                if (userInitiated)
+                    _log.Warn($"Update check failed: {result.Error}");
+                else
+                    _log.Info($"Update check failed: {result.Error}");
+                return;
+            }
+
+            var latest = result.Latest;
+            if (!result.UpdateAvailable)
+            {
+                _latestUpdate = null;
+                IsUpdateAvailable = false;
+                UpdateStatusText = $"Up to date — {AppInfo.VersionLabel} is the latest version.";
+                _log.Info($"Update check: {AppInfo.VersionLabel} is the latest version.");
+                return;
+            }
+
+            if (string.Equals(latest.Version, _settings.Settings.SkippedUpdateVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                UpdateStatusText = $"Update v{latest.Version} skipped — you will be reminded about the next release.";
+                _log.Info($"Update v{latest.Version} was skipped earlier; the banner stays hidden.");
+                return;
+            }
+
+            UpdateStatusText = $"Update available: v{latest.Version}.";
+            _log.Info($"Update available: v{latest.Version} (running {AppInfo.VersionLabel}) — {latest.ReleaseUrl}");
+
+            _latestUpdate = latest;
+            OnPropertyChanged(nameof(UpdateBannerTitle));
+            OnPropertyChanged(nameof(UpdateBannerText));
+            OnPropertyChanged(nameof(UpdateActionLabel));
+            IsUpdateAvailable = true;
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
+    }
+
+    /// <summary>Opens the Store listing for packaged builds, otherwise the release's exe.</summary>
+    private void OpenUpdate()
+    {
+        var url = UpdateService.IsPackaged
+            ? UpdateService.StorePageUrl
+            : _latestUpdate?.DownloadUrl ?? _latestUpdate?.ReleaseUrl ?? UpdateService.StorePageUrl;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            _log.Info($"Opened the update page: {url}");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Could not open the browser", ex);
+        }
+    }
+
+    private void OpenReleaseNotes()
+    {
+        var url = _latestUpdate?.ReleaseUrl;
+        if (string.IsNullOrWhiteSpace(url)) return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            _log.Info($"Opened release notes: {url}");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Could not open the browser", ex);
+        }
+    }
+
+    /// <summary>Hides the banner for this release; the next release triggers it again.</summary>
+    private void SkipUpdate()
+    {
+        if (_latestUpdate is null) return;
+
+        _settings.Settings.SkippedUpdateVersion = _latestUpdate.Version;
+        _settings.Save();
+        IsUpdateAvailable = false;
+        UpdateStatusText = $"Update v{_latestUpdate.Version} skipped — you will be reminded about the next release.";
+        _log.Info($"Update v{_latestUpdate.Version} skipped until the next release.");
     }
 
     private void LoadProviderState(ProviderOption p)

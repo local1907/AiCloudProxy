@@ -203,6 +203,7 @@
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -268,8 +269,37 @@
             </StackPanel>
         </Grid>
 
+        <!-- Update banner (hidden until a newer release is found) -->
+        <Border Grid.Row="1" Margin="0,0,0,14" CornerRadius="8" Padding="14,10"
+                Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
+                Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding UpdateBannerTitle}" FontSize="13" FontWeight="SemiBold"
+                               Foreground="#1E40AF"/>
+                    <TextBlock Text="{Binding UpdateBannerText}" FontSize="12" Foreground="#1E3A8A"
+                               Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Button Content="{Binding UpdateActionLabel}" Command="{Binding OpenUpdateCommand}"
+                            Style="{StaticResource PrimaryButton}" Padding="14,7" FontSize="12"
+                            ToolTip="Open the download page for the new version"/>
+                    <Button Content="Release notes" Command="{Binding OpenReleaseNotesCommand}"
+                            Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                            ToolTip="See what changed in the new version"/>
+                    <Button Content="Skip this version" Command="{Binding SkipUpdateCommand}"
+                            Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                            ToolTip="Keep this build; you will be notified about the next release"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Content -->
-        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+        <TabControl Grid.Row="2" Background="Transparent" BorderThickness="0">
             <TabItem Header="Proxy Server" Padding="12,10">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="0,6,0,0">
@@ -488,6 +518,22 @@
                                             Command="{Binding ResetModelFilterCommand}"
                                             Style="{StaticResource GhostButton}"
                                             HorizontalAlignment="Left" Margin="0,8,0,0"/>
+
+                                    <TextBlock Text="Updates" Style="{StaticResource Label}"
+                                               FontWeight="SemiBold" Margin="0,18,0,0"/>
+                                    <CheckBox Content="Check for updates when the app starts"
+                                              IsChecked="{Binding CheckForUpdates}"
+                                              ToolTip="Asks GitHub for the newest release once at startup. No account or personal data is involved."/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <Button Content="Check now" Command="{Binding CheckForUpdatesCommand}"
+                                                Style="{StaticResource GhostButton}"/>
+                                        <TextBlock Text="{Binding UpdateStatusText}" FontSize="11"
+                                                   Foreground="{StaticResource MutedBrush}"
+                                                   VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                               Margin="0,6,0,0" TextWrapping="Wrap"
+                                               Text="Installed version is shown in the title bar. Store builds update automatically; standalone exe builds show a download banner when a new version is published."/>
                                 </StackPanel>
 
                                 <!-- Feedback -->

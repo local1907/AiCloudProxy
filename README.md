@@ -53,6 +53,7 @@ cloud provider — no local model downloads needed.
 - **Editable model filter** — choose which models get advertised by editing a keyword list in the **Options** tab; for example un-hide music/sound-effect/audio/TTS/image models if you need them. Applies instantly, no restart. See [Model filter](#model-filter--choose-which-models-are-advertised).
 - **Multi-provider routing** — every provider with a saved API key is **active at the same time**. `GET /api/tags` advertises all their models with qualified `model@Provider` names (e.g. `deepseek-v4-flash@DeepSeek`, `gemini-2.5-flash@Gemini`); each request routes to the provider that owns the requested model, and unknown names fall back to the currently selected provider. Use the qualified name when the same model exists on more than one provider.
 - **API key links** — "Get API Key ↗" opens the right key page for the selected provider.
+- **Automatic update check** - on startup the app asks GitHub for the newest release and shows a banner when a newer version exists, with *Download update* / *Open Microsoft Store*, *Release notes* and *Skip this version*. Can be turned off in the **Options** tab. See [Releases & update check](#releases--update-check).
 - Settings persist to `%APPDATA%\AiCloudProxy\settings.json`.
 
 ## How it works
@@ -113,6 +114,26 @@ dotnet publish src/AiCloudProxy/AiCloudProxy.csproj -c Release -r win-x64 --self
 ```
 
 Output lands in `src/AiCloudProxy/bin/Release/net10.0-windows/win-x64/publish/AICloudProxy.exe`.
+
+## Releases & update check
+
+Every version is published as a GitHub Release with the self-contained `AICloudProxy.exe` attached. Pushing a tag does the whole job:
+
+```powershell
+git tag v1.0.15.0
+git push origin v1.0.15.0
+```
+
+The [release workflow](.github/workflows/release.yml) builds the exe and attaches it to the release.
+
+On startup the app asks GitHub for the newest release (`GET https://api.github.com/repos/local1907/AiCloudProxy/releases/latest`) and, if it is newer than the running build, shows a banner above the tabs:
+
+- **Download update** — opens the release's `AICloudProxy.exe` (standalone builds)
+- **Open Microsoft Store** — opens the Store listing (MSIX/Store builds, which update through the Store)
+- **Release notes** — opens the release page
+- **Skip this version** — hides the banner for that release; the next release is announced again
+
+Nothing is sent to GitHub beyond the anonymous request itself: no ids, no settings, no API keys. The check runs in the background so startup is never delayed, fails silently when offline, and can be turned off (or run manually with **Check now**) in the **Options** tab. The current state is also shown there, e.g. *"Up to date — v1.0.15.0 is the latest version."*
 
 ## Quick start
 
