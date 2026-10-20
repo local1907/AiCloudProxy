@@ -131,7 +131,6 @@ The [release workflow](.github/workflows/release.yml) builds the exe and attache
 
 On startup the app asks GitHub for the newest release (`GET https://api.github.com/repos/local1907/AiCloudProxy/releases/latest`) and, if it is newer than the running build, shows a banner above the tabs:
 
-- **Download update** — opens the release's `AICloudProxy.exe` (standalone builds)
 - **Open Microsoft Store** — opens the Store listing (MSIX/Store builds, which update through the Store)
 - **Release notes** — opens the release page
 - **Skip this version** — hides the banner for that release; the next release is announced again
