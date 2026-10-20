@@ -240,3 +240,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## 🛒 Download Official Signed Release
+
+To ensure security and prevent Windows SmartScreen / Code Signing warnings, official signed builds of **AiCloudProxy** are exclusively distributed via the **Microsoft Store**.
+
+👉 **[Get AiCloudProxy from Microsoft Store](https://apps.microsoft.com/detail/9nbb09h4p1mk?hl=en-US&gl=US)**
