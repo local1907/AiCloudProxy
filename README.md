@@ -94,35 +94,38 @@ in the app — it queries the provider and fills the model dropdown automaticall
 
 ## Build & run (dev)
 
-```powershell
+## 🛠️ Building from Source (For Developers)
+
+If you wish to build or run the developer build locally:
+
+```bash
 dotnet build src/AiCloudProxy/AiCloudProxy.csproj
 dotnet run --project src/AiCloudProxy/AiCloudProxy.csproj
-```
 
 The executable is produced at `src/AiCloudProxy/bin/Debug/net10.0-windows/AICloudProxy.exe`.
 
-## Publish a single-file exe
+## Publishing / Packaging (MSIX & Store)
 
-Requires the Windows 10/11 SDK (for a WPF single-file build) and the matching runtime on target machines.
+Official signed builds are packaged and published exclusively via the Microsoft Store.
+To create a package for Store submission (requires Windows SDK & Partner Center configuration):
 
-```powershell
-# Framework-dependent, single file (needs .NET Desktop Runtime 10 on the target PC):
-dotnet publish src/AiCloudProxy/AiCloudProxy.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish src/AiCloudProxy/AiCloudProxy.csproj -c Release -r win-x64 ...
 
-# Fully self-contained single file (no runtime needed, larger exe):
-dotnet publish src/AiCloudProxy/AiCloudProxy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-```
+## 🔄 Updates & Version Checking
 
-Output lands in `src/AiCloudProxy/bin/Release/net10.0-windows/win-x64/publish/AICloudProxy.exe`.
+Official signed updates are delivered seamlessly through the Microsoft Store.
 
-## Releases & update check
+The app includes a built-in update checker that queries GitHub (https://api.github.com/repos/local1907/AiCloudProxy/releases/latest) in the background without sending any personal data, telemetry, or API keys:
 
-Every version is published as a GitHub Release with the self-contained `AICloudProxy.exe` attached. Pushing a tag does the whole job:
+If a newer version is available, a notification banner appears above the tabs.
 
-```powershell
-git tag v1.0.15.0
-git push origin v1.0.15.0
-```
+Open Microsoft Store — directs you straight to the Store listing to download the latest signed update.
+
+Release notes — opens the GitHub release page to view changes.
+
+Skip this version — hides the banner for that specific release.
+
+Update checks fail silently when offline and can be toggled or manually triggered in the Options tab.
 
 The [release workflow](.github/workflows/release.yml) builds the exe and attaches it to the release.
 
