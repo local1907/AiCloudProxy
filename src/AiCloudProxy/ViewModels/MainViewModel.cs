@@ -189,7 +189,7 @@ public class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Check GitHub for a newer release every time the app starts (Options tab).
+    /// Check for a newer Microsoft Store version every time the app starts (Options tab).
     /// Turning it on runs a check immediately; turning it off stops the startup check.
     /// </summary>
     public bool CheckForUpdates
@@ -203,7 +203,7 @@ public class MainViewModel : ObservableObject
             _settings.Save();
             OnPropertyChanged();
             _log.Info(value
-                ? "Update check enabled — the app will check GitHub for a newer release at startup."
+                ? "Update check enabled — the app will check the Microsoft Store for a newer version at startup."
                 : "Update check disabled — no automatic update check at startup.");
 
             if (value) _ = CheckForUpdatesAsync(userInitiated: true);
@@ -233,25 +233,14 @@ public class MainViewModel : ObservableObject
     public string UpdateBannerTitle =>
         _latestUpdate is null ? "" : $"Update available — v{_latestUpdate.Version}";
 
-    /// <summary>Banner body text; Store builds update automatically, standalone builds download the exe.</summary>
-    public string UpdateBannerText
-    {
-        get
-        {
-            if (_latestUpdate is null) return "";
+    /// <summary>Banner body text; every update is installed from the Microsoft Store.</summary>
+    public string UpdateBannerText =>
+        _latestUpdate is null
+            ? ""
+            : $"You are running {AppInfo.VersionLabel}. Open the Microsoft Store to install the signed update — your settings and API keys are kept.";
 
-            return UpdateService.IsPackaged
-                ? $"You are running {AppInfo.VersionLabel}. The Microsoft Store installs updates automatically — new releases can take a few days to reach the Store."
-                : $"You are running {AppInfo.VersionLabel}. Download the new version from GitHub — your settings and API keys are kept.";
-        }
-    }
-
-    /// <summary>Text for the banner's main button (Store listing, direct exe, or release page).</summary>
-    public string UpdateActionLabel => UpdateService.IsPackaged
-        ? "Open Microsoft Store"
-        : _latestUpdate?.DownloadUrl is not null
-            ? "Download update"
-            : "Open release page";
+    /// <summary>Text for the banner's main button (the Store listing is the only channel).</summary>
+    public string UpdateActionLabel => "Open Microsoft Store";
 
     public string KeyPageUrl
     {
@@ -867,8 +856,17 @@ public class MainViewModel : ObservableObject
             {
                 _latestUpdate = null;
                 IsUpdateAvailable = false;
-                UpdateStatusText = $"Up to date — {AppInfo.VersionLabel} is the latest version.";
-                _log.Info($"Update check: {AppInfo.VersionLabel} is the latest version.");
+
+                if (result.PendingVersion is not null)
+                {
+                    UpdateStatusText = $"Store is up to date — v{result.PendingVersion} is waiting to be published.";
+                    _log.Info($"Update check: Microsoft Store is up to date at {AppInfo.VersionLabel}; v{result.PendingVersion} has not reached the Store yet.");
+                }
+                else
+                {
+                    UpdateStatusText = $"Up to date — {AppInfo.VersionLabel} is the latest version.";
+                    _log.Info($"Update check: {AppInfo.VersionLabel} is the latest version in the Microsoft Store.");
+                }
                 return;
             }
 
@@ -879,8 +877,8 @@ public class MainViewModel : ObservableObject
                 return;
             }
 
-            UpdateStatusText = $"Update available: v{latest.Version}.";
-            _log.Info($"Update available: v{latest.Version} (running {AppInfo.VersionLabel}) — {latest.ReleaseUrl}");
+            UpdateStatusText = $"Update available: v{latest.Version} in the Microsoft Store.";
+            _log.Info($"Update available: v{latest.Version} in the Microsoft Store (running {AppInfo.VersionLabel}) — {UpdateService.StorePageUrl}");
 
             _latestUpdate = latest;
             OnPropertyChanged(nameof(UpdateBannerTitle));
@@ -894,12 +892,10 @@ public class MainViewModel : ObservableObject
         }
     }
 
-    /// <summary>Opens the Store listing for packaged builds, otherwise the release's exe.</summary>
+    /// <summary>Opens the Microsoft Store listing, the only update channel.</summary>
     private void OpenUpdate()
     {
-        var url = UpdateService.IsPackaged
-            ? UpdateService.StorePageUrl
-            : _latestUpdate?.DownloadUrl ?? _latestUpdate?.ReleaseUrl ?? UpdateService.StorePageUrl;
+        var url = UpdateService.StorePageUrl;
 
         try
         {

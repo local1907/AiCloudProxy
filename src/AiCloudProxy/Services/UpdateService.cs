@@ -1,36 +1,50 @@
 using System.Net;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace AiCloudProxy.Services;
 
 /// <summary>A published release discovered by <see cref="UpdateService"/>.</summary>
-public sealed record UpdateInfo(string Version, string ReleaseUrl, string? DownloadUrl);
+public sealed record UpdateInfo(string Version, string ReleaseUrl);
 
 /// <summary>
 /// Outcome of one update check. Network/API problems are reported here instead of
 /// being thrown, so an offline machine never disturbs startup.
+/// <para>
+/// <see cref="Latest"/> carries the version currently published in the Microsoft Store
+/// (the only distribution channel). <see cref="PendingVersion"/> is a newer GitHub tag
+/// that has not reached the Store yet: it is reported, but never triggers the banner.
+/// </para>
 /// </summary>
-public sealed record UpdateCheckResult(bool Succeeded, UpdateInfo? Latest, bool UpdateAvailable, string? Error);
+public sealed record UpdateCheckResult(
+    bool Succeeded,
+    UpdateInfo? Latest,
+    bool UpdateAvailable,
+    string? Error,
+    string? PendingVersion = null);
 
 /// <summary>
-/// Checks GitHub for a newer published release. The app runs this once at startup
-/// (and on demand from the Options tab) so users who installed the standalone exe
-/// learn about updates instead of silently running an old build.
+/// Checks the Microsoft Store for the newest published version and GitHub for the
+/// matching release notes. Updates ship exclusively through the Store, so a GitHub tag
+/// that is ahead of the Store listing is reported as pending instead of offering an
+/// update the user cannot install yet.
 /// </summary>
 public sealed class UpdateService
 {
     private const string RepoUrl = "https://github.com/local1907/AiCloudProxy";
 
-    /// <summary>GitHub REST endpoint returning the newest non-prerelease release.</summary>
+    /// <summary>GitHub REST endpoint returning the newest non-prerelease release (release notes).</summary>
     public const string LatestReleaseApi = "https://api.github.com/repos/local1907/AiCloudProxy/releases/latest";
 
-    /// <summary>Microsoft Store listing, used by Store-installed (MSIX) builds.</summary>
+    /// <summary>Microsoft Store listing, where every update is installed from.</summary>
     public const string StorePageUrl = "https://apps.microsoft.com/detail/9NBB09H4P1MK";
 
-    /// <summary>GetCurrentPackageFullName error code meaning "not running from an MSIX package".</summary>
-    private const int AppModelErrorNoPackage = 15700;
+    /// <summary>Product id used by the Store catalog API.</summary>
+    public const string StoreProductId = "9NBB09H4P1MK";
+
+    /// <summary>Store catalog endpoint reporting the packages published for the product.</summary>
+    public const string StoreCatalogApi =
+        "https://displaycatalog.mp.microsoft.com/v7.0/products/{0}?market=US&languages=en-US&fieldsTemplate=Details";
 
     private static readonly HttpClient Http = CreateClient();
 
@@ -45,50 +59,40 @@ public sealed class UpdateService
             Timeout = TimeSpan.FromSeconds(20),
         };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("AICloudProxy-Updater/1.0");
-        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
 
     /// <summary>
-    /// True when the app runs from an MSIX package (Microsoft Store build), where
-    /// updates arrive through the Store rather than a downloaded exe.
-    /// </summary>
-    public static bool IsPackaged
-    {
-        get
-        {
-            try
-            {
-                var length = 0;
-                return GetCurrentPackageFullName(ref length, null) != AppModelErrorNoPackage;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetCurrentPackageFullName(ref int packageFullNameLength, System.Text.StringBuilder? packageFullName);
-
-    /// <summary>
-    /// Fetches the latest release and compares it with <paramref name="currentVersion"/>.
+    /// Reads the Store's published version together with the newest GitHub release and
+    /// compares them with <paramref name="currentVersion"/>. An update is offered only
+    /// when the Store already carries it; a newer GitHub tag is returned as
+    /// <see cref="UpdateCheckResult.PendingVersion"/>.
     /// </summary>
     public async Task<UpdateCheckResult> CheckAsync(string currentVersion, CancellationToken ct = default)
     {
         try
         {
-            using var response = await Http.GetAsync(LatestReleaseApi, ct).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-                return new UpdateCheckResult(false, null, false, $"GitHub returned HTTP {(int)response.StatusCode}.");
+            var (storeVersion, storeError) = await FetchStoreVersionAsync(ct).ConfigureAwait(false);
+            var (release, releaseError) = await FetchLatestReleaseAsync(ct).ConfigureAwait(false);
 
-            var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            var latest = ParseRelease(json);
-            if (latest is null)
-                return new UpdateCheckResult(false, null, false, "The GitHub response did not contain a release tag.");
+            if (storeVersion is null && release is null)
+                return new UpdateCheckResult(false, null, false, storeError ?? releaseError ?? "Update check failed.");
 
-            return new UpdateCheckResult(true, latest, IsNewer(currentVersion, latest.Version), null);
+            var latestVersion = storeVersion ?? release!.Version;
+            var latest = new UpdateInfo(latestVersion, release?.ReleaseUrl ?? $"{RepoUrl}/releases");
+
+            // A GitHub tag that the Store has not published yet must not nag the user:
+            // it becomes actionable only after the Store listing catches up.
+            var pending = release is not null && IsNewer(latestVersion, release.Version)
+                ? release.Version
+                : null;
+
+            return new UpdateCheckResult(
+                true,
+                latest,
+                IsNewer(currentVersion, latestVersion),
+                null,
+                pending);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -98,6 +102,114 @@ public sealed class UpdateService
         {
             return new UpdateCheckResult(false, null, false, ex.Message);
         }
+    }
+
+    private async Task<(string? Version, string? Error)> FetchStoreVersionAsync(CancellationToken ct)
+    {
+        try
+        {
+            var url = string.Format(StoreCatalogApi, StoreProductId);
+            using var response = await Http.GetAsync(url, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                return (null, $"Microsoft Store returned HTTP {(int)response.StatusCode}.");
+
+            var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var version = ParseStoreVersion(json);
+            return version is null
+                ? (null, "The Microsoft Store catalog did not report a package version.")
+                : (version, null);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    private async Task<(UpdateInfo? Release, string? Error)> FetchLatestReleaseAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, LatestReleaseApi);
+            request.Headers.Accept.ParseAdd("application/vnd.github+json");
+            using var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                return (null, $"GitHub returned HTTP {(int)response.StatusCode}.");
+
+            var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var release = ParseRelease(json);
+            return release is null
+                ? (null, "The GitHub response did not contain a release tag.")
+                : (release, null);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Reads the newest package version from a Store catalog response. Store catalog
+    /// documents list each package as "Name_version_architecture_resourceId_publisherId",
+    /// so the second segment is the version the Store would install.
+    /// Returns <c>null</c> when no version can be found.
+    /// </summary>
+    public static string? ParseStoreVersion(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            Version? newest = null;
+
+            void Visit(JsonElement element)
+            {
+                switch (element.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                        foreach (var property in element.EnumerateObject())
+                        {
+                            if (property.NameEquals("PackageFullName") &&
+                                property.Value.ValueKind == JsonValueKind.String &&
+                                TryParsePackageVersion(property.Value.GetString(), out var parsed) &&
+                                (newest is null || parsed > newest))
+                            {
+                                newest = parsed;
+                            }
+                            else
+                            {
+                                Visit(property.Value);
+                            }
+                        }
+                        break;
+                    case JsonValueKind.Array:
+                        foreach (var item in element.EnumerateArray()) Visit(item);
+                        break;
+                }
+            }
+
+            Visit(doc.RootElement);
+            return newest?.ToString();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static bool TryParsePackageVersion(string? packageFullName, out Version version)
+    {
+        version = new Version(0, 0);
+        if (string.IsNullOrWhiteSpace(packageFullName)) return false;
+
+        var segments = packageFullName.Split('_');
+        return segments.Length >= 2 && Version.TryParse(segments[1], out version!);
     }
 
     /// <summary>
@@ -119,7 +231,7 @@ public sealed class UpdateService
             if (version.Length == 0) return null;
 
             var releaseUrl = GetString(root, "html_url") ?? $"{RepoUrl}/releases/tag/{tag.Trim()}";
-            return new UpdateInfo(version, releaseUrl, FindExeAsset(root));
+            return new UpdateInfo(version, releaseUrl);
         }
         catch (JsonException)
         {
@@ -158,25 +270,6 @@ public sealed class UpdateService
         if (dash > 0) value = value[..dash];
 
         return value.Trim();
-    }
-
-    /// <summary>Prefers the release's AICloudProxy.exe asset, falling back to any .exe.</summary>
-    private static string? FindExeAsset(JsonElement root)
-    {
-        if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
-            return null;
-
-        string? firstExe = null;
-        foreach (var asset in assets.EnumerateArray())
-        {
-            var url = GetString(asset, "browser_download_url");
-            var name = GetString(asset, "name") ?? "";
-            if (string.IsNullOrWhiteSpace(url)) continue;
-
-            if (name.Equals("AICloudProxy.exe", StringComparison.OrdinalIgnoreCase)) return url;
-            if (firstExe is null && name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) firstExe = url;
-        }
-        return firstExe;
     }
 
     private static string? GetString(JsonElement element, string property) =>

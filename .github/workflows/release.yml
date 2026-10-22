@@ -1,4 +1,4 @@
-name: Build and Release
+name: Create Release (Store-only distribution)
 
 on:
   push:
@@ -12,34 +12,16 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 10 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-          include-prerelease: true
-
-      - name: Publish win-x64 single-file executable
-        run: >
-          dotnet publish src/AiCloudProxy/AiCloudProxy.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          /p:PublishSingleFile=true
-          /p:DebugType=None
-          /p:DebugSymbols=false
-          -o artifacts/publish/${{ github.ref_name }}
-
-      - name: Create GitHub Release and upload asset
+      # Signed binaries are published exclusively through the Microsoft Store.
+      # GitHub releases only announce the version and its notes, and the app links
+      # to them from the update banner.
+      - name: Create GitHub Release (release notes only)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: AI Cloud Proxy ${{ github.ref_name }}
-          files: artifacts/publish/${{ github.ref_name }}/AICloudProxy.exe
           generate_release_notes: true
           make_latest: true

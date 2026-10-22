@@ -287,7 +287,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                     <Button Content="{Binding UpdateActionLabel}" Command="{Binding OpenUpdateCommand}"
                             Style="{StaticResource PrimaryButton}" Padding="14,7" FontSize="12"
-                            ToolTip="Open the download page for the new version"/>
+                            ToolTip="Open the Microsoft Store listing to install the update"/>
                     <Button Content="Release notes" Command="{Binding OpenReleaseNotesCommand}"
                             Style="{StaticResource GhostButton}" Margin="8,0,0,0"
                             ToolTip="See what changed in the new version"/>
@@ -523,7 +523,7 @@
                                                FontWeight="SemiBold" Margin="0,18,0,0"/>
                                     <CheckBox Content="Check for updates when the app starts"
                                               IsChecked="{Binding CheckForUpdates}"
-                                              ToolTip="Asks GitHub for the newest release once at startup. No account or personal data is involved."/>
+                                              ToolTip="Asks the Microsoft Store for the newest published version at startup (GitHub is only used for release notes). No account or personal data is involved."/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                         <Button Content="Check now" Command="{Binding CheckForUpdatesCommand}"
                                                 Style="{StaticResource GhostButton}"/>
@@ -533,7 +533,7 @@
                                     </StackPanel>
                                     <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
                                                Margin="0,6,0,0" TextWrapping="Wrap"
-                                               Text="Installed version is shown in the title bar. Store builds update automatically; standalone exe builds show a download banner when a new version is published."/>
+                                               Text="Installed version is shown in the title bar. Updates are delivered through the Microsoft Store; the app shows a banner when the Store publishes a newer version."/>
                                 </StackPanel>
 
                                 <!-- Feedback -->

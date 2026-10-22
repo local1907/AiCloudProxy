@@ -53,7 +53,7 @@ cloud provider — no local model downloads needed.
 - **Editable model filter** — choose which models get advertised by editing a keyword list in the **Options** tab; for example un-hide music/sound-effect/audio/TTS/image models if you need them. Applies instantly, no restart. See [Model filter](#model-filter--choose-which-models-are-advertised).
 - **Multi-provider routing** — every provider with a saved API key is **active at the same time**. `GET /api/tags` advertises all their models with qualified `model@Provider` names (e.g. `deepseek-v4-flash@DeepSeek`, `gemini-2.5-flash@Gemini`); each request routes to the provider that owns the requested model, and unknown names fall back to the currently selected provider. Use the qualified name when the same model exists on more than one provider.
 - **API key links** — "Get API Key ↗" opens the right key page for the selected provider.
-- **Automatic update check** - on startup the app asks GitHub for the newest release and shows a banner when a newer version exists, with *Download update* / *Open Microsoft Store*, *Release notes* and *Skip this version*. Can be turned off in the **Options** tab. See [Releases & update check](#releases--update-check).
+- **Automatic update check** - on startup the app asks the Microsoft Store for the newest published version and shows a banner when an update is installable, with *Open Microsoft Store*, *Release notes* and *Skip this version*. Can be turned off in the **Options** tab. See [Updates & Version Checking](#-updates--version-checking).
 - Settings persist to `%APPDATA%\AiCloudProxy\settings.json`.
 
 ## How it works
@@ -92,54 +92,55 @@ DeepSeek also exposes `deepseek-v4-pro` and the experimental `deepseek-v4-flash-
 (image input). Instead of typing these by hand, enter your API key and click **Get Models**
 in the app — it queries the provider and fills the model dropdown automatically.
 
-## Build & run (dev)
-
 ## 🛠️ Building from Source (For Developers)
-
-If you wish to build or run the developer build locally:
 
 ```bash
 dotnet build src/AiCloudProxy/AiCloudProxy.csproj
 dotnet run --project src/AiCloudProxy/AiCloudProxy.csproj
+```
 
 The executable is produced at `src/AiCloudProxy/bin/Debug/net10.0-windows/AICloudProxy.exe`.
 
 ## Publishing / Packaging (MSIX & Store)
 
-Official signed builds are packaged and published exclusively via the Microsoft Store.
-To create a package for Store submission (requires Windows SDK & Partner Center configuration):
+Official signed builds are packaged and published **exclusively** through the Microsoft Store —
+that is the only supported way to install or update AI Cloud Proxy.
 
-dotnet publish src/AiCloudProxy/AiCloudProxy.csproj -c Release -r win-x64 ...
+To build the app for a Store submission (Windows SDK + Partner Center association required):
+
+```powershell
+dotnet publish src/AiCloudProxy/AiCloudProxy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false
+```
+
+Then package the output with the **AI Cloud Proxy** Windows Application Packaging Project
+(`AI Cloud Proxy/AI Cloud Proxy.wapproj`) and submit the MSIX bundle from Visual Studio
+(*Publish → Create App Packages → Microsoft Store*).
 
 ## 🔄 Updates & Version Checking
 
-Official signed updates are delivered seamlessly through the Microsoft Store.
+Updates are delivered **only** through the Microsoft Store. The Store listing is the source of
+truth for the newest version, so the app never offers an update that cannot be installed yet.
 
-The app includes a built-in update checker that queries GitHub (https://api.github.com/repos/local1907/AiCloudProxy/releases/latest) in the background without sending any personal data, telemetry, or API keys:
+At startup (and from **Options → Check now**) the app:
 
-If a newer version is available, a notification banner appears above the tabs.
+1. Reads the version currently published in the Store catalog for product `9NBB09H4P1MK`.
+2. Compares it with the version of the installed package (`GetCurrentPackageFullName`).
+3. Asks GitHub for the newest release **only** to link its release notes.
 
-Open Microsoft Store — directs you straight to the Store listing to download the latest signed update.
+When the Store carries a newer version, a banner appears above the tabs with:
 
-Release notes — opens the GitHub release page to view changes.
+- **Open Microsoft Store** — opens the Store listing to install the signed update.
+- **Release notes** — opens the matching GitHub release page.
+- **Skip this version** — hides the banner for that release.
 
-Skip this version — hides the banner for that specific release.
-
-Update checks fail silently when offline and can be toggled or manually triggered in the Options tab.
-
-The [release workflow](.github/workflows/release.yml) builds the exe and attaches it to the release.
-
-On startup the app asks GitHub for the newest release (`GET https://api.github.com/repos/local1907/AiCloudProxy/releases/latest`) and, if it is newer than the running build, shows a banner above the tabs:
-
-- **Open Microsoft Store** — opens the Store listing (MSIX/Store builds, which update through the Store)
-- **Release notes** — opens the release page
-- **Skip this version** — hides the banner for that release; the next release is announced again
-
-Nothing is sent to GitHub beyond the anonymous request itself: no ids, no settings, no API keys. The check runs in the background so startup is never delayed, fails silently when offline, and can be turned off (or run manually with **Check now**) in the **Options** tab. The current state is also shown there, e.g. *"Up to date — v1.0.15.0 is the latest version."*
+If a GitHub tag is ahead of the Store (for example right after tagging a release but before the
+Store submission is certified), the app reports it as *waiting to be published* and does **not**
+show the update banner. Offline checks fail silently. No ids, settings or API keys are sent; the
+check can be turned off in the **Options** tab.
 
 ## Quick start
 
-1. Run `AICloudProxy.exe`.
+1. Install **AI Cloud Proxy** from the [Microsoft Store](https://apps.microsoft.com/detail/9NBB09H4P1MK) and launch it.
 2. Pick a provider (e.g. DeepSeek) and click **Get API Key ↗** to grab a key from that provider's site.
 3. Paste the API key into the **API Key** box.
 4. Set the **Port** (default `11435`).

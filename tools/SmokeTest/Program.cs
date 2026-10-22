@@ -416,17 +416,39 @@ internal static class Program
                 var info = UpdateService.ParseRelease(release);
                 Assert(info is not null, "release JSON should parse");
                 Assert(info!.Version == "1.0.15.0", $"version mismatch: {info.Version}");
-                Assert(info.DownloadUrl == "https://example.test/AICloudProxy.exe",
-                    $"exe asset not selected: {info.DownloadUrl}");
                 Assert(UpdateService.IsNewer("1.0.14.0", info.Version), "parsed release should be an update");
                 return Task.CompletedTask;
             });
 
-            await Check("UpdateService tolerates a release without assets", () =>
+            await Check("UpdateService reads the published Store version", () =>
             {
-                var info = UpdateService.ParseRelease("""{"tag_name":"v2.0.0","html_url":"https://example.test/r"}""");
-                Assert(info is not null && info.DownloadUrl is null, "release without assets should still parse");
-                Assert(info!.ReleaseUrl == "https://example.test/r", $"release url mismatch: {info.ReleaseUrl}");
+                const string catalog = """
+                {
+                  "Product": {
+                    "DisplaySkuAvailabilities": [
+                      { "Sku": { "Properties": {
+                          "PackageFullName": "LoCaL1907.AICloudProxy_1.0.16.0_neutral_~_m6m9bvs2wkttj" } } },
+                      { "Sku": { "Properties": {
+                          "PackageFullName": "LoCaL1907.AICloudProxy_1.0.17.0_neutral_~_m6m9bvs2wkttj" } } }
+                    ]
+                  }
+                }
+                """;
+
+                var version = UpdateService.ParseStoreVersion(catalog);
+                Assert(version == "1.0.17.0", $"store version mismatch: {version}");
+                Assert(UpdateService.ParseStoreVersion("""{"Product":{}}""") is null,
+                    "catalog without a package name should return null");
+                Assert(UpdateService.ParseStoreVersion("not-json") is null, "invalid JSON should return null");
+                return Task.CompletedTask;
+            });
+
+            await Check("UpdateService tolerates a release without a link", () =>
+            {
+                var info = UpdateService.ParseRelease("""{"tag_name":"v2.0.0"}""");
+                Assert(info is not null, "release without html_url should still parse");
+                Assert(info!.ReleaseUrl.Contains("releases/tag/v2.0.0", StringComparison.Ordinal),
+                    $"fallback release url mismatch: {info.ReleaseUrl}");
                 Assert(UpdateService.ParseRelease("""{"tag_name":""}""") is null, "missing tag should return null");
                 return Task.CompletedTask;
             });
